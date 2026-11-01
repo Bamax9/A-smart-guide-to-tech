@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quintech Tech Helper</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Source+Serif+4:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F5F0E6;--card:#FCFAF5;--line:#E0D6C3;--text:#2A2520;--mute:#6B6256;--acc:#D97757;--accd:#A6502F;--on:#2A2520;--fs:20px;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1F1B17;--card:#2A251F;--line:#4A4036;--text:#F3EBDD;--mute:#B8AC9A;--acc:#E08A6B;--accd:#E9A185;color-scheme:dark}}
+*,*::before,*::after{box-sizing:inherit}
+html{background:var(--bg);scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Atkinson Hyperlegible",system-ui,Arial,sans-serif;font-size:var(--fs);line-height:1.55}
+.wrap{max-width:640px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.logo{width:48px;height:48px;border-radius:50%;background:var(--acc);color:var(--on);display:grid;place-items:center;font-weight:700;font-size:21px;flex:none}
+header h1{font:600 1.2em "Source Serif 4",Georgia,serif;margin:0;line-height:1.2}
+header small{color:var(--mute);font-size:.7em}
+.size{margin-left:auto;background:none;border:2px solid var(--line);color:var(--text);border-radius:12px;padding:8px 12px;font:inherit;font-size:.8em;cursor:pointer}
+h2{font:600 1.6em/1.25 "Source Serif 4",Georgia,serif;margin:8px 0 16px}
+.opts{display:grid;gap:12px}
+.opt{background:var(--card);border:2px solid var(--line);color:var(--text);border-radius:16px;padding:18px;font:inherit;font-weight:700;text-align:left;cursor:pointer;min-height:64px}
+.opt:hover{border-color:var(--acc)}
+:focus-visible{outline:3px solid var(--accd);outline-offset:2px}
+.nav{display:flex;gap:10px;margin-top:22px}
+.nav button{background:none;border:2px solid var(--line);color:var(--text);border-radius:12px;padding:12px 16px;font:inherit;cursor:pointer}
+.answer{background:var(--card);border-left:6px solid var(--acc);border-radius:16px;padding:8px 20px 20px}
+.answer ol{padding-left:1.3em;margin:0}
+.answer li{margin:14px 0}
+.ask{margin-top:24px;font-weight:700}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.yes{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.note{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:16px;margin-top:16px}
+#srch{margin-bottom:18px}#q{width:100%;font:inherit;padding:14px 16px;border:2px solid var(--line);border-radius:14px;background:var(--card);color:var(--text)}#res{display:grid;gap:10px;margin-top:10px}.tool{background:none;border:2px solid var(--line);color:var(--text);border-radius:12px;padding:10px 14px;font:inherit;font-size:.85em;cursor:pointer;margin:0 0 14px}.mine{font-weight:700;margin:6px 0}.sec{margin:0 0 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div class="logo">Qt</div>
+<div><h1>Quintech Tech Helper</h1><small>Easy help, one question at a time</small></div>
+<button class="size" id="size" aria-label="Change text size">A+</button>
+</header>
+<div id="srch"><input id="q" type="search" placeholder="🔍 Type your problem, like “no sound”" aria-label="Search for your problem"><div id="res"></div></div>
+<main id="app" aria-live="polite"></main>
+</div>
+<script>
+const T={},A={};
+T.home={q:"What are you having trouble with today?",o:[["🌱 I want to learn how to use something","lrn"],["📺 My TV","tv"],["💻 My computer","pc"],["📱 My phone or tablet","ph"],["📶 Wi-Fi or internet","wifi"],["🖨️ My printer","pr"],["🔊 My smart speaker","sp"],["📹 A video call","vc"],["✉️ Email and passwords","em"],["⚠️ Something looks like a scam","sc"]]};
+
+function mk(key,q,items,probs,fn){
+  T[key]={q:q,o:items.map(i=>[i[1],key+"_"+i[0]])};
+  items.forEach(i=>{
+    T[key+"_"+i[0]]={q:"What is wrong?",o:probs.map(p=>[p[1],key+"_"+i[0]+"_"+p[0]])};
+    probs.forEach(p=>{A[key+"_"+i[0]+"_"+p[0]]={t:i[1]+": "+p[1],s:fn(p[0],i[2]).filter(Boolean)};});
+  });
+}
+function flat(key,q,list){T[key]={q:q,o:list.map(x=>[x[1],key+"_"+x[0]])};list.forEach(x=>{A[key+"_"+x[0]]={t:x[1],s:x[2]};});}
+
+/* TVs */
+const gi="Press Input or Source on the TV remote and pick the HDMI number your box or stick is plugged into.";
+const gr="Unplug the TV from the wall for 60 seconds, then plug it back in.";
+const TVB=[
+["fire","Amazon Fire Stick",{inp:gi,snd:"Press Home, then Settings, then Display & Sounds, then Audio.",rem:"Hold the Home button for 10 seconds to connect the remote again.",net:"Press Home, then Settings, then Network.",rst:"Unplug the Fire Stick for 30 seconds, then plug it back in."}],
+["roku","Roku",{inp:gi,snd:"Press Home, then Settings, then Audio. Set Audio mode to Stereo.",rem:"Take out the batteries. Unplug the Roku and plug it in again. Put the batteries back. Hold the small pairing button inside the battery space for 5 seconds until a light flashes. (Remotes with no pairing button only need new batteries.)",net:"Press Home, then Settings, then Network.",rst:"Press Home, then Settings, then System, then Power, then System restart."}],
+["sam","Samsung TV",{inp:"Press Source on the remote and pick the right HDMI.",snd:"Press Home, then Settings, then Sound, then Sound Output. Choose TV Speaker.",rem:"Point at the TV and hold Back and Play/Pause together for 3 seconds.",net:"Go to Settings, then General, then Network.",rst:"Hold the power button on the remote until the Samsung logo shows."}],
+["lg","LG TV",{inp:"Press Input on the remote, or press Home and choose Inputs.",snd:"Press the Settings gear, then Sound, then Sound Out. Choose TV Speaker.",rem:"Point at the TV and hold Back and Home together for 5 seconds.",net:"Press Settings, then All Settings, then Network.",rst:gr}],
+["sony","Sony TV",{inp:"Press Input on the remote and pick the right HDMI.",snd:"Press Home, then Settings, then Display & Sound, then Audio output. Choose TV speaker.",rem:"Hold Back and Home together for 5 seconds, near the TV.",net:"Go to Settings, then Network & Internet.",rst:gr}],
+["viz","Vizio TV",{inp:"Press Input on the remote and pick the right HDMI.",snd:"Press Menu, then Audio. Make sure Speakers is On.",rem:"Point the remote straight at the front of the TV, close to the screen.",net:"Press Menu, then Network.",rst:gr}],
+["tcl","TCL TV",{inp:gi,snd:"Press Settings, then Audio. Choose TV speakers.",rem:"If your TCL shows the Roku home screen, follow the Roku steps. If it shows Google TV, hold Back and Home together for 5 seconds.",net:"Go to Settings, then Network.",rst:gr}],
+["his","Hisense TV",{inp:gi,snd:"Press Settings, then Sound. Choose TV speakers.",rem:"New batteries first. If your Hisense shows the Roku or Google home screen, follow the steps for that one.",net:"Go to Settings, then Network.",rst:gr}],
+["atv","Apple TV",{inp:gi,snd:"Open Settings, then Video and Audio, then Audio Output.",rem:"Point the Siri Remote at the Apple TV. Hold Back (or Menu) and Volume Up together for 5 seconds.",net:"Open Settings, then Network.",rst:"Open Settings, then System, then Restart."}],
+["gtv","Google TV or Chromecast",{inp:gi,snd:"Go to Settings, then Display & Sound, then Audio output.",rem:"Hold Back and Home together for 5 seconds.",net:"Go to Settings, then Network & Internet.",rst:"Unplug it for 30 seconds, then plug it back in."}],
+["cab","Cable or satellite box",{inp:"Use the TV remote. Press Input and pick the HDMI the cable box is on. Then use the cable remote for channels.",snd:"Press Menu or Settings on the cable remote and look for Audio.",rem:"Press the TV button on the cable remote first to control the TV. Try new batteries. Your cable company can help set up a remote.",net:"Cable boxes use their own line. If the guide or channels will not load, call your cable company.",rst:"Unplug the cable box for 30 seconds, plug it in, and wait 5 minutes."}],
+["oth","Another TV",{inp:gi,snd:"Press Menu or Settings, then look for Sound.",rem:"Look in the TV booklet for how to connect the remote.",net:"Press Menu or Settings, then look for Network.",rst:gr}]
+];
+mk("tv","What kind of TV or box do you use?",TVB,
+[["pic","No picture"],["snd","No sound"],["rem","The remote does not work"],["net","Apps are slow or will not load"],["pow","The TV will not turn on"],["dim","The picture looks wrong"],["cc","Words on the screen (captions)"]],
+(p,b)=>({
+ pic:["Check that the TV power cord is in the wall and every cable is pushed in tight.",b.inp,"Make sure the box or stick is on. Look for a small light.",b.rst],
+ snd:["Press volume up. If you see a mute icon, press Mute.",b.snd,"If you use a soundbar or speakers, check that they are on.","Make sure no headphones are connected.",b.rst],
+ rem:["Put in new batteries. Match the + and − to the pictures inside.","Test it: point the remote at a phone camera and press a button. A flashing light on the phone screen means the remote works.",b.rem,"Use the buttons on the TV for now. They are usually on the bottom or back."],
+ net:["Check another device on the same Wi-Fi. If it fails too, unplug the Wi-Fi box for 30 seconds and plug it back in.",b.net+" Make sure it shows your home Wi-Fi name.",b.rst],
+ pow:["Check the plug is firm in the wall. Try another outlet, or test the outlet with a lamp.","If it is on a power strip, check the strip’s switch is on.",gr+" Then press the power button on the TV itself.","If no light comes on at all, it may need repair. Ask family to call the TV maker."],
+ dim:["Press Settings or Menu on the remote, then Picture.","Choose Standard as the Picture Mode. Turn off Energy Saving or Eco.","Raise Brightness a little.","If the picture looks stretched, find Picture Size and choose Auto or Original."],
+ cc:["Press Settings or Menu on the remote.","Find Accessibility, then Captions or Subtitles. Turn them On or Off.","On a cable box, use its menu, or press CC on its remote.","Apps like Netflix and YouTube have their own caption button on the playing screen."]
+})[p]);
+
+/* Computers */
+const CP=[
+["win","Windows computer",{rst:"Click Start, then the Power button, then Restart.",frz:"Press Ctrl, Alt, and Delete together. Click Task Manager, choose the frozen program, and click End Task.",size:"Click Start, then Settings, then Accessibility, then Text size, and slide the bar. Also try Settings, System, Display, Scale.",snd:"Click the speaker icon near the clock at the bottom right. Slide the volume up and unmute.",wifi:"Click the Wi-Fi icon near the clock at the bottom right. Choose your Wi-Fi name and type the password.",upd:"Click Start, then Settings, then Windows Update."}],
+["mac","Apple Mac",{rst:"Click the Apple menu at the top left, then Restart.",frz:"Press Option, Command, and Escape together. Choose the frozen program and click Force Quit.",size:"Click the Apple menu, then System Settings, then Accessibility, then Display. Change Text size and Pointer size.",snd:"Click the Control Center icon at the top right (two small switches). Slide Sound up.",wifi:"Click the Wi-Fi icon at the top right. Choose your Wi-Fi name and type the password.",upd:"Click the Apple menu, then System Settings, then General, then Software Update."}],
+["chr","Chromebook",{rst:"Click the clock at the bottom right, then the power button. Wait 30 seconds and turn it on again.",frz:"Press Shift and Escape together. Choose the frozen program and click End process.",size:"Click the clock, then the gear, then Accessibility. Also hold Ctrl and press + to zoom.",snd:"Click the clock at the bottom right and slide the volume bar.",wifi:"Click the clock, then the Wi-Fi name, and choose yours.",upd:"Click the clock, then the gear, then About ChromeOS, then Check for updates."}]
+];
+mk("pc","What kind of computer do you use?",CP,
+[["slow","It is slow"],["frz","It is frozen"],["small","Everything is too small"],["snd","No sound"],["wifi","It will not connect to Wi-Fi"],["blk","The screen is black"],["mouse","The mouse or keyboard stopped"]],
+(p,c)=>({
+ slow:["Close windows and browser tabs you are not using.",c.rst+" Wait for it to finish.","Keep the computer on a hard surface, not a blanket. Heat slows it down.",c.upd+" Install any updates."],
+ frz:["Wait one minute. Sometimes it is just thinking.",c.frz,"If nothing moves, hold the power button for 10 seconds until it turns off. Wait 30 seconds and turn it on."],
+ small:[c.size,"In your browser, hold Ctrl (Command on a Mac) and press + to zoom in. Add 0 to go back."],
+ snd:[c.snd,"Check that speakers or headphones are plugged in and turned on.",c.rst],
+ wifi:[c.wifi,"Check a phone on the same Wi-Fi. If it fails too, unplug the Wi-Fi box for 30 seconds.",c.rst],
+ blk:["Press any key or move the mouse. It may be asleep.","Check the power cord and look for a light.","Turn the brightness up. Use the sun-shaped keys at the top of the keyboard.","Hold the power button for 10 seconds, wait, and turn it on again."],
+ mouse:["Wireless: put in new batteries or charge it. Turn it off and on with the switch underneath.","USB cable: unplug it and try a different USB port.",c.rst+" Use the Tab and Enter keys to move around if the mouse is stuck."]
+})[p]);
+
+/* Phones and tablets */
+const PH=[
+["ip","iPhone",{rst:"Hold the side button and a volume button until the slider appears. Slide to power off. Wait 30 seconds, then hold the side button until the Apple logo shows.",size:"Open Settings, then Display & Brightness, then Text Size. Also try Accessibility, then Display & Text Size, then Larger Text.",vol:"Press volume up on the left side. Check the Silent switch above the volume buttons. Open Settings, then Sounds & Haptics, and slide Ringer up.",stor:"Open Settings, then General, then iPhone Storage.",batt:"Open Settings, then Battery. Turn on Low Power Mode.",wifi:"Open Settings, then Wi-Fi, and pick your network.",lost:"On a computer, go to icloud.com/find and sign in to see where it is. Or use Find My on another Apple device.",frz:"Quickly press volume up, then volume down, then hold the side button until the Apple logo shows."}],
+["ipad","iPad",{rst:"Hold the top button (and a volume button on newer iPads) until the slider appears. Slide to power off. Wait 30 seconds, then hold the top button.",size:"Open Settings, then Display & Brightness, then Text Size. Also try Accessibility, then Larger Text.",vol:"Press volume up on the side. Open Settings, then Sounds, and slide the volume bar.",stor:"Open Settings, then General, then iPad Storage.",batt:"Open Settings, then Battery. Turn on Low Power Mode.",wifi:"Open Settings, then Wi-Fi, and pick your network.",lost:"On a computer, go to icloud.com/find and sign in to see where it is.",frz:"Hold the top button and a volume button, then restart. On an iPad with a Home button, hold the Home and top buttons together for 10 seconds."}],
+["sg","Samsung Galaxy",{rst:"Hold the Side button and Volume down until a menu shows. Tap Restart.",size:"Open Settings, then Display, then Font size and style.",vol:"Press volume up on the side. Open Settings, then Sounds and vibration, and slide Ringtone and Call volume up.",stor:"Open Settings, then Battery and device care, then Storage.",batt:"Open Settings, then Battery and device care, then Battery. Turn on Power saving.",wifi:"Open Settings, then Connections, then Wi-Fi.",lost:"On a computer, go to findmymobile.samsung.com and sign in.",frz:"Hold the Side and Volume down buttons for 10 seconds until it restarts."}],
+["px","Google Pixel",{rst:"Hold the Power button, then tap Restart.",size:"Open Settings, then Display, then Display size and text.",vol:"Press volume up on the side. Open Settings, then Sound & vibration.",stor:"Open Settings, then Storage, then tap Free up space.",batt:"Open Settings, then Battery, then Battery Saver.",wifi:"Open Settings, then Network & internet, then Internet.",lost:"On a computer, go to android.com/find and sign in.",frz:"Hold the Power button for 30 seconds until it restarts."}],
+["oa","Other Android phone or tablet",{rst:"Hold the Power button, then tap Restart.",size:"Open Settings, then Display, then look for Font size.",vol:"Press volume up on the side. Open Settings, then Sound.",stor:"Open Settings, then Storage.",batt:"Open Settings, then Battery. Turn on Battery Saver or Power saving.",wifi:"Open Settings, then Wi-Fi or Network & internet.",lost:"On a computer, go to android.com/find and sign in with the Google account on the phone.",frz:"Hold the Power button for 30 seconds until it restarts."}]
+];
+mk("ph","What kind of phone or tablet do you have?",PH,
+[["small","Words are too small"],["vol","I cannot hear well"],["stor","Storage is full"],["batt","The battery dies fast"],["wifi","It will not connect to Wi-Fi"],["lost","I cannot find it"],["frz","It is frozen"]],
+(p,f)=>({
+ small:[f.size,"On a web page, spread two fingers apart on the screen to zoom in."],
+ vol:[f.vol,"Do not cover the speaker with a finger or case.","Try speaker mode during a call."],
+ stor:[f.stor,"Photos and videos take the most room. Ask family to help back them up before deleting.","Remove apps you never use.","If you are not sure about deleting something, ask first."],
+ batt:[f.batt,"Turn the screen brightness down.","Close apps you are not using.","If it still dies in a few hours, the battery may be old. Ask family or a repair shop."],
+ wifi:[f.wifi,"Turn Wi-Fi off and on.",f.rst,"If all your devices fail, unplug the Wi-Fi box for 30 seconds."],
+ lost:["Stay calm. Ask someone to call it. It may be under a cushion or in a bag.",f.lost,"Check pockets, the car seat, and the bathroom.","If it is gone, call your phone company to lock it."],
+ frz:["Wait one minute.",f.frz,"If it still does not work, plug it in to charge for 15 minutes, then try again."]
+})[p]);
+
+/* Wi-Fi */
+flat("wifi","What is happening with the internet?",[
+["all","Nothing connects on any device",["Look at your internet box (modem and router). Are the lights on? Red or blinking lights can mean a problem.","Unplug its power. Count to 30. Plug it back in.","Wait 3 minutes for the lights to settle, then try again.","Still down? Call your internet company. The number is on your bill."]],
+["one","Only one device has trouble",["Turn Wi-Fi off and on on that device.","Restart the device.","Make sure it is on your Wi-Fi name, not a neighbor’s.","Choose your Wi-Fi name again and retype the password."]],
+["pw","I forgot my Wi-Fi password",["Look for a sticker on the side or bottom of the router. It shows the Wi-Fi name and password.","Look for words like Password, Key, or Passphrase.","Type capital and small letters exactly. A zero and the letter O look alike.","No sticker? Call your internet company."]],
+["slow","The internet is slow",["Restart the Wi-Fi box: unplug 30 seconds.","Many devices at once can slow it. Turn off Wi-Fi on devices you are not using.","Move closer to the router.","Still slow? Call your internet company and ask about your speed."]],
+["room","Wi-Fi is weak in some rooms",["Move the router to the middle of the house, up high and out in the open.","Do not hide it in a cabinet or behind a TV.","Ask your internet company about a Wi-Fi extender or mesh system."]],
+["lights","What do the router lights mean?",["Green or white usually means good.","Red, orange, or blinking can mean no internet.","Restart it first: unplug 30 seconds.","If the light stays red or orange, call your internet company."]]
+]);
+
+/* Printers */
+const PR=[["hp","HP printer","HP Smart"],["can","Canon printer","Canon PRINT"],["eps","Epson printer","Epson Smart Panel"],["bro","Brother printer","Brother Mobile Connect"]].map(x=>[x[0],x[1],{app:x[2]}]);
+mk("pr","What kind of printer do you have?",PR,
+[["no","It will not print"],["faint","Pages are blank or faint"],["jam","Paper is stuck"],["wifi","It lost its Wi-Fi"]],
+(p,f)=>({
+ no:["Check the printer is on, has paper, and shows no blinking error lights.","Make sure it is on the same Wi-Fi as your computer or phone.","Turn it off for 30 seconds, then on.","On your computer, cancel stuck print jobs and choose this printer again.","The free "+f.app+" app can find the printer and fix problems."],
+ faint:["Check the ink level on the printer screen or your computer.","Take the ink cartridges out and push them back in firmly.","Look in the printer menu for Clean or Clean Printhead. Run it once.","Use paper made for printers."],
+ jam:["Turn the printer off and unplug it.","Open the doors and trays gently. Pull the paper slowly the way it travels. Do not yank.","Look for small torn pieces.","Plug in and turn on."],
+ wifi:["Turn the printer on and look at its Wi-Fi light.","Open the "+f.app+" app and follow its Wi-Fi setup.","Your phone must be on your home Wi-Fi.","If you got a new router or changed the password, do this setup again."]
+})[p]);
+
+/* Smart speakers */
+const SP=[["alexa","Amazon Echo (Alexa)",{w:"Alexa",app:"Alexa app"}],["goog","Google Nest speaker",{w:"Hey Google",app:"Google Home app"}],["apple","Apple HomePod",{w:"Hey Siri",app:"Home app"}]];
+mk("sp","What kind of smart speaker do you have?",SP,
+[["na","It does not answer me"],["wf","It cannot connect to Wi-Fi"],["vol","It is too quiet or too loud"]],
+(p,f)=>({
+ na:["Check it has power and a light on.","Look for a microphone button or switch. Make sure the microphone is on. A red or orange light often means it is off.","Say “"+f.w+"” clearly, then wait for it to listen.","Unplug it for 30 seconds and plug it back in."],
+ wf:["Check another device on your Wi-Fi. If it fails too, unplug the Wi-Fi box for 30 seconds.","Unplug the speaker for 30 seconds.","Open the "+f.app+" on your phone and follow Setup or Wi-Fi.","If you changed your Wi-Fi password, you must set the speaker up again."],
+ vol:["Say “"+f.w+", volume up” or “volume down”.","You can also say “volume 5”.","Look for volume buttons or a ring on top of the speaker."]
+})[p]);
+
+/* Video calls */
+const VC=[["ft","FaceTime",{j:"Open the FaceTime app. Tap New FaceTime, type the name, and tap Video. Or tap the link you were sent.",c:"Tap the screen to show the buttons. Tap the camera button. A slash through it means off.",m:"Tap the screen to show the buttons. Tap the microphone. A slash through it means muted."}],
+["zm","Zoom",{j:"Tap the invite link you were sent. Or open Zoom, tap Join, and type the meeting number.",c:"Tap Start Video at the bottom left.",m:"Tap Unmute at the bottom left. Choose Call using internet audio if asked."}],
+["wa","WhatsApp",{j:"Open WhatsApp, tap the person’s chat, then tap the video camera at the top.",c:"On the call screen, tap the camera button to turn video on.",m:"Tap the microphone button to unmute."}],
+["gm","Google Meet",{j:"Tap the meeting link, or open Meet and tap Join with a code.",c:"Tap the camera button at the bottom.",m:"Tap the microphone button at the bottom."}]];
+mk("vc","Which video call app are you using?",VC,
+[["join","I cannot start or join"],["cam","They cannot see me"],["mic","They cannot hear me"]],
+(p,f)=>({
+ join:[f.j,"Check your Wi-Fi works by opening a website.","Close the app and open it again."],
+ cam:[f.c,"If it asks “Allow camera?”, tap Allow.","Make sure nothing covers the camera and the room has light."],
+ mic:[f.m,"If it asks “Allow microphone?”, tap Allow.","Check your phone volume is up. Try headphones."]
+})[p]);
+
+/* Email */
+flat("em","What is the trouble?",[
+["pw","I forgot my password",["On the sign-in page, tap Forgot password.","Follow the steps. A code may go to your phone or other email.","Make a new password with three or four random words together.","Write it in a notebook kept at home."]],
+["send","Email will not send or arrive",["Check your internet works by opening a website.","Look in the Spam or Junk folder.","Check the address for spelling mistakes.","Close the email app and open it again, or restart the device."]],
+["junk","Too much junk email",["Open the unwanted email and tap Report spam or Junk.","Use Unsubscribe only for stores you know. Delete strange emails.","Never reply to junk email."]],
+["hack","I think my email was hacked",["Change your password right away.","Turn on 2-step sign-in in your account settings. Ask family to help.","Tell friends not to click strange messages from you.","If bank details were shared, call the bank using the number on your card."]]
+]);
+
+/* Scams */
+flat("sc","What happened?",[
+["pop","A pop-up says I have a virus",["Do not call the number on the pop-up. Do not click anything in it.","Close the whole browser. If it will not close, turn the computer off with the power button.","Real companies never show a pop-up with a phone number to call.","Tell a family member."]],
+["call","A caller says they are from my bank or the government",["Hang up. You are allowed to be rude to protect yourself.","Real banks and government offices do not ask for gift cards, passwords, or codes on the phone.","If you are worried, call the number on the back of your bank card.","Tell a family member."]],
+["kid","Someone says a grandchild needs money",["Stop. Do not send money.","Hang up. Call your grandchild or their parents on a number you already know.","Make up a family question only the real person could answer.","Scammers want you to feel scared and rushed. Slow down."]],
+["link","An email or text asks me to click a link",["Do not click the link or open the attachment.","Look for spelling mistakes or a strange sender address.","If it says it is from a store or bank, open the real website or app yourself.","Delete it and tell a family member."]],
+["gift","Someone asked me to buy gift cards",["Stop. Real offices never ask you to pay with gift cards.","Do not read the numbers on the back to anyone.","Hang up and talk to a family member.","If you already did, call the gift card company right away and tell family."]],
+["pkg","A text says my package is stuck",["Do not tap the link.","If you are waiting for a package, go to the store’s real website or app and check there.","Delete the text."]],
+["prize","I won a prize or lottery",["If you did not enter, you did not win.","A real prize never asks you to pay money first.","Do not give out any bank or card numbers.","Delete it and tell family."]],
+["friend","A friend online asks me for money",["Their account may be taken over by a scammer.","Call your friend on the phone. Use a number you already have.","Do not send money until you hear their real voice.","Tell family."]]
+]);
+
+/* Learn the basics */
+T.lrn={q:"What would you like to learn? Take your time. There are no silly questions.",o:[["📺 Using my TV","l_tv"],["📱 Using my phone","l_ph"],["💻 Using my computer","l_pc"],["🌐 Using the internet and email","l_net"],["🔊 Using a smart speaker","l_sp"],["📖 What do these words mean?","l_words"]]};
+
+const LOST=["Press Home to get back to the main screen.","Press Back to go back one step.","If the picture disappeared, press Input or Source on the TV remote.","Pressing Back or Home cannot hurt the TV."];
+const LT=[
+["fire","Amazon Fire Stick",{
+rmt:["Use the big circle in the middle. Press its edges to move around, and the center button (Select) to pick.","Back is the arrow. Home is the little house.","The three-lines button (Menu) shows extra choices.","Rewind, Play/Pause, and Fast forward are the three buttons in a row.","Hold the microphone button (Alexa) to talk. Newer remotes also have volume and power for the TV."],
+on:["A Fire Stick has no power button. It is on when the TV is on and set to the right HDMI.","If the screen is black, press Home on the Fire remote to wake it.","To turn off, use the TV power button, or hold Home and choose Sleep."],
+apps:["Press Home. Move up and down to see rows of apps and shows.","Your apps are in the row called Your Apps & Channels.","Move to an app and press the center button to open it. Press Home to leave.","To get a new app, choose Find, then Apps, then Get. Ask family to help the first time."],
+voice:["Press and hold the microphone button.","Say what you want, like “Netflix” or “funny movies”.","Let go and wait a moment."],
+live:["A Fire Stick shows live channels from apps, not a cable guide.","Choose Live at the top of the Home screen if you see it.","Free apps like Pluto TV and Tubi have live channels. Ask family to install them.","For cable channels, press Input on the TV remote and pick your cable box."]}],
+["roku","Roku",{
+rmt:["Arrows move around. OK in the middle picks.","Back is the arrow. Home is the little house.","The star button (*) shows options for what is highlighted.","Replay jumps back a few seconds. Rewind, Play/Pause, and Fast forward control a show.","Colored shortcut buttons open channels like Netflix right away.","Voice remotes have a microphone button."],
+on:["A Roku turns on when the TV is on and set to the right HDMI. Press Home to wake it.","A Roku TV has Roku built in. Use the remote power button.","A Roku stick or box has no power button. Turn the TV off to turn it off."],
+apps:["Press Home. Roku calls apps channels.","Move to a channel and press OK. Press Home to leave.","To add one, choose Streaming Channels, pick a channel, and select Add Channel."],
+voice:["On a Roku Voice Remote, hold the microphone button.","Say a show name or a channel like “Netflix”.","Let go and wait. No microphone? Use Search on the Home screen."],
+live:["Roku shows live TV through channels. Look for The Roku Channel and its Live TV area.","For an antenna or cable box, press Input on the TV remote and pick it."]}],
+["sam","Samsung TV",{
+rmt:["Power turns the TV on and off.","The round button with arrows moves and picks.","Home (the little house) opens your apps.","Back goes back. Hold the microphone to talk.","Volume and channel are rocker buttons. Press the top to go up.","Press the 123 button to show a number pad on the screen."],
+on:["Press Power on the remote once.","If the remote does not work, press the button on the TV, usually bottom middle.","To turn off, press Power once."],
+apps:["Press Home. Your apps are along the bottom.","Move left and right and press the middle button to open one. Press Home to leave.","To add apps, go to Apps, use the magnifying glass, and choose Install."],
+voice:["Hold the microphone button on the remote.","Say “Open Netflix” or a show name.","Let go and wait."],
+live:["Press Home and open Samsung TV Plus for free live channels.","Or press Source and pick your cable box or antenna."]}],
+["lg","LG TV",{
+rmt:["The Magic Remote works like a wand. Point it at the screen and a pointer appears. If not, shake it.","The wheel in the middle scrolls. Press the wheel to pick.","Home opens your apps. Back goes back.","Hold the microphone button to talk.","Volume and channel are rocker buttons."],
+on:["Press Power on the remote.","If the remote does not work, press the small joystick button at the bottom center of the TV.","To turn off, press Power."],
+apps:["Press Home. A row of apps shows along the bottom.","Point at an app and press the wheel. Press Home to leave.","To add more, open LG Content Store and choose Install."],
+voice:["Hold the microphone button.","Say “Netflix” or a show name.","Let go and wait."],
+live:["Press Home and open LG Channels for free live TV.","Or press Input and pick your cable box or antenna."]}],
+["gtv","Google TV (Sony, TCL, Chromecast)",{
+rmt:["The circle moves around. The center button picks.","Home and Back are the two main buttons.","The microphone button is Google Assistant. Hold it and talk.","Colored buttons open apps like YouTube and Netflix right away.","Some have Input and volume buttons for the TV."],
+on:["Press Power on the remote.","On a Chromecast stick, turn on the TV, pick its HDMI, and press Home.","It goes to sleep when the TV turns off."],
+apps:["Press Home. Rows of apps and shows appear.","Pick an app in Your apps and press the center button. Press Home to leave.","To add one, choose Apps, then Search for apps, then Install."],
+voice:["Hold the microphone button.","Say “YouTube” or “Show me cooking videos”.","Let go and wait."],
+live:["Choose Live at the top for free live channels.","For cable, press Input and pick the cable box."]}],
+["viz","Vizio TV",{
+rmt:["The V button opens your apps.","Input switches between things plugged in.","Menu changes TV settings.","Arrows and OK move and pick. Back goes back.","App buttons like Netflix open the app right away."],
+on:["Press Power on the remote.","The TV may have a power button under the Vizio logo or on the back.","To turn off, press Power."],
+apps:["Press the V button.","Move to an app and press OK. Press V to leave."],
+voice:["Many Vizio remotes have a microphone button. Hold it and speak.","If yours does not, use on-screen search with the arrows."],
+live:["Press V and look for WatchFree+ for free live channels.","Or press Input and pick your cable box or antenna."]}],
+["atv","Apple TV",{
+rmt:["The top of the Siri Remote is a clickpad. Slide your thumb to move. Press down to pick.","Back is the arrow. The TV button (a little TV) goes Home.","Hold the microphone button to talk to Siri.","Play/Pause, volume + and −, and Mute are on the remote."],
+on:["The Apple TV wakes when you press any button. Turn on the TV and pick its HDMI first.","To sleep it, hold the TV button, then choose Sleep. It also sleeps on its own."],
+apps:["Press the TV button to go Home.","Slide to an app and click to open it.","To add one, open App Store, search, and choose Get."],
+voice:["Hold the microphone button.","Say “Open Netflix” or “Show me comedies”.","Let go and wait."],
+live:["An Apple TV does not have its own live channels.","Use an app like YouTube TV or your cable company’s app, or press Input and pick a cable box."]}],
+["cab","Cable or satellite box",{
+rmt:["Guide shows a list of what is on.","Info tells about the show you are watching.","Menu opens settings and more.","OK picks. Arrows move around.","Last jumps back to the previous channel.","On Demand shows movies and shows you can play."],
+on:["Turn the TV on with the TV remote.","Press Power on the cable remote to wake the box.","No picture? Press Input on the TV remote and pick the HDMI the box is on."],
+apps:["Many cable boxes have apps like Netflix inside. Press Menu or Apps.","Find the app and press OK. Press Exit or Back to leave.","Your cable company can help with your remote."],
+voice:["Many cable remotes have a microphone button. Hold it and say a channel or show.","No microphone? Ask your cable company about a voice remote."],
+live:["Type the channel number, or press Channel up and down.","Press Guide to see what is on.","Press Last to go back to the previous channel."]}]
+];
+mk("l_tv","Which TV or box do you have?",LT,[["rmt","What do the buttons on my remote do?"],["on","Turn it on and off"],["apps","Open and switch apps"],["voice","Find shows by talking"],["live","Watch regular TV channels"],["lost","I am lost on the screen"]],(p,b)=>p==="lost"?LOST:b[p]);
+
+const LCALL=["Open the green Phone app.","Tap Keypad, type the number, and tap the green button. Or tap Contacts and tap a name.","To answer, slide or tap the green button.","Tap the red button to end or decline.","Tap Speaker to hear it out loud."];
+const LTXT=["Open the Messages app.","Tap the new message button (a pencil or a +).","Type a name or number. Tap the message box and type.","Tap the arrow to send.","Tap the microphone on the keyboard to talk instead."];
+const LCON=["Open Phone, then tap Contacts.","Tap the + button.","Type the name and number.","Tap Save or Done."];
+const LTALK=["Tap where you want to type so the keyboard shows.","Tap the little microphone on the keyboard.","Speak slowly. Say “period” or “comma”.","Tap the microphone again to finish."];
+const LP=[
+["ip","iPhone",{
+home:["The Home screen holds your app icons.","Newer iPhones have no round button: swipe up from the very bottom to go Home.","Older iPhones: press the round Home button.","To switch apps, swipe up and pause in the middle.","Swipe left and right for more apps."],
+pow:["Turn on: hold the side button on the right until the Apple logo shows.","Charge: plug the cable into the iPhone and the wall plug. A green battery with a bolt means it is charging.","Turn off: hold the side button and a volume button until the slider shows. Slide it to power off."],
+call:LCALL,txt:LTXT,
+pic:["Open the Camera app.","Tap the big white circle.","To see it, tap the small picture in the corner, or open the Photos app.","Tap the trash can to delete. Ask first."],
+con:LCON,talk:LTALK}],
+["sg","Samsung Galaxy",{
+home:["Swipe up from the bottom to go Home. If you see three buttons instead, tap the middle one.","To go Back, swipe in from the left or right edge, or tap the button on the right.","To switch apps, swipe up and pause, or tap the left button.","Swipe left and right for more apps."],
+pow:["Turn on: hold the Side button on the right until the Samsung logo shows.","Charge: plug the cable into the phone and the wall plug.","Turn off: hold the Side button and Volume down until a menu shows. Tap Power off."],
+call:LCALL,txt:LTXT,
+pic:["Open the Camera app.","Tap the big white circle.","To see it, tap the small picture in the corner, or open the Gallery app.","Tap the trash can to delete. Ask first."],
+con:LCON,talk:LTALK}],
+["px","Google Pixel",{
+home:["Swipe up from the bottom to go Home.","Swipe in from the left or right edge to go Back.","Swipe up and pause to switch apps.","Swipe left and right for more apps."],
+pow:["Turn on: hold the Power button on the right until the Google logo shows.","Charge: plug the cable into the phone and the wall plug.","Turn off: hold the Power button, then tap Power off."],
+call:LCALL,txt:LTXT,
+pic:["Open the Camera app.","Tap the big white circle.","To see it, open the Photos app. Your newest photo is first.","Tap the trash can to delete. Ask first."],
+con:LCON,talk:LTALK}]
+];
+mk("l_ph","What phone do you have?",LP,[["home","Move around and get back Home"],["pow","Turn it on, off, and charge it"],["call","Make and answer calls"],["txt","Send a text message"],["pic","Take a photo and find it"],["con","Save a contact"],["talk","Type by talking"]],(p,b)=>b[p]);
+
+const LC=[
+["win","Windows computer",{
+on:["Press the power button and wait a minute.","Type your password or PIN if asked.","To turn off, click Start (the Windows logo at the bottom), then Power, then Shut down."],
+mouse:["Move the mouse and watch the arrow.","Left click once to pick. Double click to open.","Right click opens a menu of choices.","On a touchpad, one finger moves, a tap clicks, and two fingers slide to scroll."],
+win:["The three buttons in the top right: a line (hide), a square (bigger), an X (close).","A hidden window waits on the bar at the bottom. Click it to bring it back.","Click Start and type a program’s name to find it."],
+web:["Click the browser icon at the bottom, a colorful circle (Chrome) or a blue wave (Edge).","Click the long bar at the top and type your question.","Press Enter. Click a blue title to open it.","Click the back arrow at the top left to go back."],
+file:["Open Word or Notepad from the Start menu.","Click in the white area and type.","Hold Ctrl and press S to save. Name it and pick Documents.","Find it later in File Explorer (the yellow folder at the bottom) under Documents."]}],
+["mac","Apple Mac",{
+on:["Press the power button, or open the lid on a laptop.","Type your password.","To turn off, click the Apple at the top left, then Shut Down."],
+mouse:["Move the mouse, or one finger on the trackpad.","Click once to pick, twice to open.","Click with two fingers on the trackpad for a menu.","Slide two fingers up and down to scroll."],
+win:["The three colored circles in the top left: red closes, yellow hides, green makes it bigger.","The Dock at the bottom holds your apps. Click an icon to open it.","Hidden windows wait on the right side of the Dock."],
+web:["Click the blue Safari compass in the Dock.","Click the long bar at the top and type your question.","Press Return. Click a blue title.","Click the back arrow at the top left to go back."],
+file:["Open Pages or TextEdit from the Dock.","Click and type.","Hold Command and press S to save. Name it and pick Documents.","Find it later in Finder (the blue smiling face in the Dock) under Documents."]}],
+["chr","Chromebook",{
+on:["Press the power button and wait for sign-in.","Click your name and type your password.","To turn off, click the clock at the bottom right, then the power button."],
+mouse:["Move one finger on the touchpad to move the arrow.","Tap or click once to pick.","Click with two fingers for a menu.","Slide two fingers up and down to scroll."],
+win:["The three buttons in the top right: a line (hide), a square (bigger), an X (close).","The bar at the bottom holds your apps.","Click the circle at the bottom left to see all apps."],
+web:["Click the Chrome circle on the bottom bar.","Type your question in the long bar at the top.","Press Enter. Click a blue title.","Click the back arrow at the top left."],
+file:["Open Google Docs from the apps circle.","Click and type. It saves for you.","Find it again in Google Drive.","To print, hold Ctrl and press P."]}]
+];
+mk("l_pc","What kind of computer do you have?",LC,[["on","Turn it on and off"],["mouse","Use the mouse or touchpad"],["win","Open, shrink, and close windows"],["web","Look something up on the internet"],["file","Write a letter and save it"]],(p,b)=>b[p]);
+
+flat("l_net","What do you want to learn about the internet?",[
+["what","What is Wi-Fi and the router?",["Wi-Fi is how your phone, TV, and computer get on the internet without a cable.","The router is the box with blinking lights. It sends out the Wi-Fi.","Your Wi-Fi has a name and a password. They are often on a sticker on the router.","Each device connects once, and then remembers it."]],
+["search","Look something up",["Open a browser, like Chrome, Safari, or Edge.","Click in the long bar at the top and type your question.","Press Enter.","Click a blue title to open a page. Results marked Ad are paid, so be careful with those.","Use the back arrow at the top left to go back."]],
+["safe","How do I know a website is safe?",["Use websites you already know, like your bank’s or your favorite store.","Type the website’s address yourself instead of clicking a link in a message.","Never give a password or card number to someone who contacted you first.","Do not click pop-ups that say you have a virus.","If you feel unsure, stop and ask a family member."]],
+["mail","Send an email",["Open your email app or website.","Tap or click Compose, New, or the + button.","Type the person’s email address in the To box.","Type a short subject, like “Hello”.","Type your message, then tap or click Send."]],
+["vid","Make my first video call",["Pick an app your family uses, like FaceTime or WhatsApp.","Open it and tap the person’s name.","Tap the video camera button.","Hold the phone at eye level, with a light in front of you, not behind you.","Tap the red button to end the call."]]
+]);
+
+flat("l_sp","What do you want to learn about your smart speaker?",[
+["ask","How do I talk to it?",["Say its wake word first: “Alexa”, “Hey Google”, or “Hey Siri”.","Wait for a light or a sound.","Then say what you want in a normal voice."]],
+["try","What can I ask it?",["“What is the weather today?”","“Set a timer for 10 minutes.”","“Play some music.”","“What time is it?”","“Call” and then the name of someone in your contacts, if it has been set up.","“Stop” makes it be quiet."]]
+]);
+
+flat("l_words","Which word do you want explained?",[
+["app","App",["A small program on a phone, tablet, or TV.","Each one has its own picture, called an icon.","Examples: Netflix, Weather, Camera."]],
+["icon","Icon",["A small picture on the screen that you tap or click to open something."]],
+["wifi","Wi-Fi",["The wireless connection that lets your devices use the internet without a cable."]],
+["browser","Browser",["The program you use to visit websites.","Examples: Chrome, Safari, and Edge."]],
+["hdmi","HDMI",["A cable that carries picture and sound from one device to a TV.","TVs have ports labeled HDMI 1, HDMI 2, and so on."]],
+["pass","Password",["A secret word or phrase that keeps your account safe.","Make it long, and do not share it with anyone who contacts you."]],
+["login","Sign in or log in",["Typing your name or email and password to get into your account."]],
+["cloud","The cloud",["Storage on the internet instead of on your device.","Photos saved in the cloud are safe if your phone breaks."]],
+["dl","Download and update",["Download: copy something from the internet onto your device.","Update: a newer version of an app or system that fixes problems."]],
+["stream","Streaming",["Watching shows or listening to music over the internet instead of from a disc or cable.","Examples: Netflix, YouTube, and Spotify."]]
+]);
+
+/* Troubleshooting tree: every "Not yet" asks a new question and tries new fixes */
+function fx(k,t,st,n){A[k]={t:t,s:st,n:n};}
+function qq(k,q,o){T[k]={q:q,o:o};}
+
+qq("g1","What do you see or hear now?",[["Nothing happens. No lights, no sound.","g_power"],["It is on, but it acts slow or strange.","g_restart"],["A message or code shows on the screen.","g2c"],["It worked before and stopped today.","g_changed"]]);
+fx("g_power","No power",["Plug it straight into the wall, not a power strip.","Try a different outlet. Test the outlet with a lamp.","Check the cable is tight at the device and at the wall.","For a phone or tablet, charge it for 30 minutes before pressing power."],"g2a");
+qq("g2a","Which one is true?",[["A light comes on but nothing else","g_light"],["It is totally dark","g_dark"]]);
+fx("g_light","A light, but nothing else",["Hold the power button for 10 to 15 seconds.","Unplug it for 5 minutes.","Plug it in and wait 2 full minutes."],"help");
+fx("g_dark","Totally dark",["Try a different charger or cord. A broken cable is very common.","Check the circuit breaker in the house.","Ask a family member to try it in another room."],"help");
+fx("g_restart","Restart it all the way",["Turn it off. Sleep is not the same as off.","Unplug it from the wall, or hold the power button for 10 seconds.","Wait a full 60 seconds.","Plug it in, turn it on, and wait 2 minutes before testing."],"g2b");
+qq("g2b","Does it do this in every app or program?",[["Only one app","g_oneapp"],["Every app","g_allapps"]]);
+fx("g_oneapp","Trouble with one app",["Close the app all the way, then open it again.","Look in the app store for an update.","Sign out and sign in again.","Delete the app and install it again. Ask family first."],"g_others");
+fx("g_allapps","Trouble with everything",["Check for updates for the whole device.","Free up space. A full device acts slow.","Check that the internet is working.","Turn off things you do not use."],"g_others");
+qq("g2c","What does the message say?",[["It asks for a password","g_pw"],["It says update or storage","g_updstor"],["It shows an error code or number","g_code"]]);
+fx("g_pw","Password trouble",["Check Caps Lock and the number keys.","Use Forgot password to make a new one.","Ask family to help you.","Write the new password in a notebook at home."],"help");
+fx("g_updstor","Update or storage message",["If it says update, plug it in, connect to Wi-Fi, and let it finish. Do not turn it off.","If it says storage is full, ask family to help remove photos or apps.","Restart it when done."],"g_others");
+fx("g_code","An error code",["Write down the exact words and numbers.","Search them with the device name on the maker’s own website.","Never call a phone number that shows up inside an error message."],"help");
+qq("g_changed","What changed before it stopped?",[["A power outage or storm","g_outage"],["Something new was added (router, phone, TV)","g_new"],["An update","g_update"],["It was dropped or got wet","g_damage"],["Nothing I can think of","g_others"]]);
+fx("g_outage","After a power outage",["Unplug it. Wait 5 minutes. Plug it back in.","Restart the Wi-Fi box too.","Power surges can break things. If it still fails, it may need repair."],"g_others");
+fx("g_new","After something new",["Unplug the new thing and see if the old setup works again.","Make sure the TV input and Wi-Fi are set right.","Check the setup guide for the new device."],"g_others");
+fx("g_update","After an update",["Restart the device.","Check for another update, since a fix may already be out.","Ask family to search online for the problem."],"g_others");
+fx("g_damage","Dropped or wet",["Turn it off and unplug it.","If it got wet, do not turn it on. Let it dry for 2 days.","It likely needs a repair shop."],"help");
+qq("g_others","Does anything else have the same problem?",[["Yes, everything does","g_every"],["Only this one thing","g_only"],["I am not sure","g_test"]]);
+fx("g_every","Everything has trouble",["The cause is likely the power or the internet, not this one thing.","Restart the Wi-Fi box and wait 5 minutes.","Ask a neighbor, or check your internet or power company’s website for an outage."],"help");
+fx("g_only","Only this one thing",["Compare it with a similar device that works.","Look at its settings. Reset the network or sign-in on this device only.","Update it, then restart it."],"help");
+fx("g_test","Testing another device",["Try the same thing on another device, like a phone.","If the other device works, the problem is this device.","If it fails too, the problem is the internet or the account."],"help");
+
+/* TV-specific branches */
+qq("tvpic","What does the TV screen show?",[["Black, but a light is on","tvp_blk"],["A message like No Signal","tvp_nos"],["Snow, wavy lines, or flicker","tvp_snow"],["Stuck on a logo or loading circle","tvp_logo"],["Only the colors or size look odd","tvp_col"]]);
+fx("tvp_blk","Black screen, light is on",["Turn the TV off. Unplug the cable box or stick for 30 seconds, then plug it back in.","Press Input and try each HDMI number slowly. Wait 5 seconds on each.","Turn the brightness up. A dark picture can look black.","Try a different HDMI port on the back of the TV."],"g1");
+fx("tvp_nos","No Signal",["No Signal means that input is not getting a picture.","Make sure your box or stick is on and shows a light.","Push the HDMI cable in firmly at both ends.","Pick a different input and look for the one your box uses."],"g1");
+fx("tvp_snow","Snow, lines, or flicker",["Push every cable in tight, especially the round antenna or cable wire.","Gently check cables for bends or damage.","With an antenna, move it near a window and run Channel Scan in the TV menu.","Try another input. If it looks fine there, the box or its cable is the problem."],"g1");
+fx("tvp_logo","Stuck on a logo",["Wait 5 minutes. Updates can take a while. Do not unplug during an update.","Then unplug the TV for 60 seconds.","Hold the TV’s own power button for 10 seconds.","Plug it back in and wait for the Home screen."],"g1");
+fx("tvp_col","Odd colors or size",["Press Settings, then Picture, then Picture Mode, and pick Standard.","Find Reset Picture and select it.","If colors look green or purple, try a different HDMI cable.","If the picture is stretched, set Picture Size to Auto or Original."],"g1");
+qq("tvsnd","What is wrong with the sound?",[["No sound at all","tvs_none"],["Too quiet, even when loud","tvs_quiet"],["Words do not match the mouths","tvs_sync"],["Crackling or buzzing","tvs_crk"]]);
+fx("tvs_none","No sound at all",["Check the volume number on the screen. It must be above 0.","If a soundbar or speaker is connected, turn it on and turn it up.","In the Sound menu, set Sound Output to TV Speaker.","If you see Bluetooth or headphones on screen, turn Bluetooth off."],"g1");
+fx("tvs_quiet","Too quiet",["Turn up the volume on the TV and on the cable box or stick remote.","Try a different show to see if only one is quiet.","Turn on Dialogue or Speech boost in Sound settings if you have it.","Turn on captions to help."],"g1");
+fx("tvs_sync","Sound does not match",["Close the app and open it again.","Restart the TV and the box.","Look in Sound settings for Audio Delay or Lip Sync and adjust it.","If you use a soundbar, unplug it for 30 seconds."],"g1");
+fx("tvs_crk","Crackling or buzzing",["Push the cables in firmly.","Keep cables away from power cords.","Switch to a different HDMI port.","Try a different HDMI cable if you have one."],"g1");
+qq("tvrem","What does the remote do?",[["Nothing works at all","tvr_none"],["Only some buttons work","tvr_some"],["Works only up close","tvr_close"],["It runs the cable box but not the TV","tvr_box"]]);
+fx("tvr_none","Remote does nothing",["Take the batteries out. Press every button once. Put in fresh batteries.","Look for rust or dirt in the battery space and wipe it with a dry cloth.","Test with a phone camera for a flashing light.","If the light flashes but the TV ignores it, move things away from the TV’s sensor at the front."],"g1");
+fx("tvr_some","Some buttons work",["Wipe the remote with a slightly damp cloth.","Press the stuck buttons firmly many times.","Take the batteries out and put them back in.","If your remote has a TV button, press it first."],"g1");
+fx("tvr_close","Works only up close",["The batteries are weak. Use new ones.","Make sure nothing blocks the front of the TV.","Point straight at the TV sensor, usually at the bottom."],"g1");
+fx("tvr_box","Runs the cable box, not the TV",["Press the TV button on the remote before power or volume.","Many remotes control the box first. Your cable company can help set it up.","Use the TV’s own remote for the TV."],"g1");
+qq("tvnet","What happens when you open an app?",[["It spins or keeps buffering","tvn_buf"],["It says no internet or network","tvn_no"],["It asks me to sign in again","tvn_sign"],["It closes or crashes","tvn_crash"]]);
+fx("tvn_buf","Buffering",["Pause the show for one minute and let it load.","Move the Wi-Fi box closer, or turn off other devices using the internet.","Restart the TV and the Wi-Fi box.","Check a phone near the TV to see if the internet is slow there too."],"g1");
+fx("tvn_no","No internet message",["Open the TV’s Network menu. It should show your Wi-Fi name and say Connected.","Pick your Wi-Fi again and retype the password.","Restart the Wi-Fi box: unplug it for 30 seconds.","If other devices work, restart the TV."],"g1");
+fx("tvn_sign","Asks to sign in",["Sign out, then sign in again.","Use the right email and password. Check Caps Lock.","If you forgot, use Forgot password. Ask family to help."],"g1");
+fx("tvn_crash","App crashes",["Close the app fully and open it again.","Look for an update for the app and the TV.","Delete the app and install it again. Ask family to help.","Restart the TV."],"g1");
+qq("tvpow","What does the TV do when you press power?",[["A light blinks","tvw_blink"],["A light comes on, then goes off","tvw_click"],["No light at all","tvw_dark"]]);
+fx("tvw_blink","A blinking light",["Count the blinks. The number can tell what is wrong. Check the TV booklet or the maker’s website.","Unplug it for 5 minutes, then plug it in.","Hold the TV’s power button for 15 seconds."],"help");
+fx("tvw_click","Light comes on, then off",["Unplug it for 5 minutes. Plug it straight into the wall.","Use the power button on the TV, not the remote.","Hold the TV’s power button for 15 seconds."],"g1");
+fx("tvw_dark","No light at all",["Test the outlet with a lamp.","Try a different outlet, not a power strip.","Push the power cord in tight at the back of the TV.","Check the circuit breaker in the house."],"help");
+
+/* Wi-Fi branch */
+qq("wf1","What do the lights on your router show?",[["Normal (green or white)","wf_ok"],["A red or orange light","wf_red"],["No lights at all","wf_off"],["Blinking, but nothing connects","wf_blink"]]);
+fx("wf_ok","Lights look normal",["The box looks fine, so the trouble may be with your device.","Restart your device and connect again.","On your device, forget the Wi-Fi name, then join it again with the password."],"g_others");
+fx("wf_red","Red or orange light",["Red or orange usually means the internet line is down.","Push the cable from the wall into the router firmly.","Unplug the router for 1 minute, plug it in, and wait 5 minutes.","Check your internet company’s website or app for an outage."],"help");
+fx("wf_off","No lights",["Check the plug is firm in the wall and in the box.","Try another outlet.","Look for a power switch on the box."],"help");
+fx("wf_blink","Blinking, no connection",["Restart the router and wait 5 minutes.","If you have two boxes, restart the one connected to the wall first, then the other.","If it keeps blinking, call your internet company."],"g_others");
+
+/* Computer branches */
+qq("cq_slow","When is it slow?",[["Only when I use the internet","c_s1"],["All the time, even at start","c_s2"],["It gets hot or the fan is loud","c_s3"],["Only one program is slow","c_s4"]]);
+fx("c_s1","Slow on the internet",["Close extra browser tabs. Keep only one or two open.","Close the browser and open it again.","Test the Wi-Fi with a phone. If the phone is slow too, unplug the Wi-Fi box for 30 seconds.","In the browser settings, find Clear browsing data. Ask family to help."],"g1");
+fx("c_s2","Slow all the time",["Restart the computer all the way.","Ask family to turn off extra programs that start when it turns on.","Free up space. A full computer is slow.","Check for updates and install them."],"g1");
+fx("c_s3","Hot or loud fan",["Turn it off and let it cool for 30 minutes.","Put it on a hard, flat surface. Never on a blanket or pillow.","Gently blow air at the air vents or use a soft brush.","If it keeps overheating, it needs repair."],"help");
+fx("c_s4","One slow program",["Close that program and open it again.","Look for an update for it.","Delete it and install it again. Ask family first."],"g1");
+qq("cq_frz","What happened when it froze?",[["The mouse moves but clicks do nothing","c_f1"],["Nothing moves at all","c_f2"],["It freezes again and again","c_f3"]]);
+fx("c_f1","Mouse moves, clicks do nothing",["Wait 2 minutes.","Press the Escape key a few times.","Open the task closer: Ctrl, Alt, Delete (Windows), Option, Command, Escape (Mac), or Shift and Escape (Chromebook). Close the stuck program."],"g1");
+fx("c_f2","Nothing moves",["Wait 2 minutes.","Hold the power button for 10 seconds until it turns off.","Wait 30 seconds, then turn it on."],"g1");
+fx("c_f3","Freezes again and again",["Install any updates.","Free up space.","Unplug extra things like USB drives.","Many freezes may mean it needs repair."],"help");
+qq("cq_snd","What is the sound problem?",[["No sound from anything","c_n1"],["Only one program or video has no sound","c_n2"],["Speakers or headphones not found","c_n3"]]);
+fx("c_n1","No sound at all",["Check the volume bar and make sure Mute is off.","Check that speakers or headphones are plugged in and turned on.","Open the Sound settings and pick the right speaker under Output.","Restart the computer."],"g1");
+fx("c_n2","One program has no sound",["On a video, check the player’s volume slider and speaker icon.","Close the program and open it again.","Check the program’s own Mute."],"g1");
+fx("c_n3","Speakers not found",["Unplug and plug them back in.","For Bluetooth, turn Bluetooth off and on, then pair them again.","Charge the speakers or headphones.","Try different speakers or headphones to test."],"g1");
+qq("cq_wifi","What does the computer say about Wi-Fi?",[["My Wi-Fi name is missing","c_w1"],["It says Connected but websites do not open","c_w2"],["It says wrong password","c_w3"]]);
+fx("c_w1","Wi-Fi name missing",["Turn Airplane mode off.","Turn Wi-Fi off and on in the Wi-Fi menu.","Move closer to the router.","Restart the computer and the router."],"g1");
+fx("c_w2","Connected, no websites",["Close the browser and open it again.","Unplug the Wi-Fi box for 30 seconds.","Forget the network, then join it again."],"g1");
+fx("c_w3","Wrong password",["Look on the router sticker for the password.","Type carefully. Capital letters matter, and zero and the letter O look alike.","If someone changed the password, use the new one."],"g1");
+qq("cq_blk","What does the black screen look like?",[["A light is on but the screen is black","c_b1"],["No lights at all","c_b2"],["Black with a message","c_b3"]]);
+fx("c_b1","Light on, screen black",["Press any key and move the mouse.","Turn the brightness up with the keys at the top of the keyboard.","Hold the power button for 10 seconds, wait, and turn it on.","If you have another screen or TV, plug it in to test."],"g1");
+fx("c_b2","No lights",["Plug in the charger. A laptop may have an empty battery. Wait 15 minutes.","Try another outlet.","Check the charger cable for damage."],"help");
+fx("c_b3","Black with a message",["Write down the message.","Unplug USB drives and discs.","Press Enter or Escape if it asks.","Search the exact words on the maker’s website."],"help");
+qq("cq_mouse","Which one has trouble?",[["Wireless mouse or keyboard","c_m1"],["Mouse or keyboard with a cable","c_m2"],["Laptop touchpad","c_m3"]]);
+fx("c_m1","Wireless mouse or keyboard",["Put in new batteries or charge it.","Turn it off and on with the switch underneath.","Plug the small USB receiver into a different port.","For Bluetooth, pair it again in Settings."],"g1");
+fx("c_m2","Mouse or keyboard with a cable",["Unplug it, wait 10 seconds, and plug it into a different USB port.","Check the cable for damage.","Try it on another computer."],"g1");
+fx("c_m3","Laptop touchpad",["Clean the touchpad with a dry cloth. Make sure your fingers are dry.","Look for a key with a touchpad picture on it. The touchpad may be switched off.","Plug in a mouse to use for now."],"g1");
+
+/* Phone and tablet branches */
+qq("pq_vol","What is the sound problem?",[["I cannot hear the other person on calls","p_v1"],["The ringer is too quiet","p_v2"],["Videos and apps have no sound","p_v3"]]);
+fx("p_v1","Cannot hear on calls",["Press volume up during the call.","Hold the top of the phone right against your ear.","Gently clean the earpiece with a dry soft brush.","Take off the case and try Speaker mode."],"g1");
+fx("p_v2","Ringer too quiet",["Press volume up and check the ringer volume in Settings.","Make sure Do Not Disturb and Silent are off.","Check the small Silent switch on the side if your phone has one."],"g1");
+fx("p_v3","No sound in videos or apps",["Press volume up while the video plays.","Turn Bluetooth off. It may be playing on a speaker.","Check the app’s own sound button."],"g1");
+qq("pq_stor","What is the storage problem?",[["Photos use too much","p_s1"],["I do not know what is using it","p_s2"],["It says full when I update","p_s3"]]);
+fx("p_s1","Too many photos",["Ask family to help back up your photos to the cloud or a computer.","After backup, delete blurry or duplicate photos.","Empty the Recently Deleted or Trash folder."],"g1");
+fx("p_s2","What is using space",["Open Settings, then Storage. You will see the biggest items.","Delete apps you never use.","Clear an app’s stored files if the app offers it."],"g1");
+fx("p_s3","Full during an update",["Free up at least 5 GB first.","Plug in the charger and use Wi-Fi.","Restart and try the update again."],"g1");
+qq("pq_batt","What does the battery do?",[["It drains fast","p_b1"],["It will not charge","p_b2"],["It gets hot","p_b3"]]);
+fx("p_b1","Battery drains fast",["Turn the screen brightness down.","Turn on Battery Saver or Low Power Mode.","Close apps you are not using.","Turn off Bluetooth and Location if you do not need them."],"g1");
+fx("p_b2","Will not charge",["Try a different cable and wall plug.","Gently clean the charging port with a soft brush or a wooden toothpick. Never use metal.","Plug into the wall, not a computer or power strip.","Leave it plugged in for 30 minutes."],"g1");
+fx("p_b3","Gets hot",["Take off the case.","Move it out of the sun.","Turn it off for 15 minutes.","If it keeps getting hot, stop using it and ask for help."],"help");
+qq("pq_wifi","What does the phone say about Wi-Fi?",[["It will not find my Wi-Fi","p_w1"],["It connects but nothing loads","p_w2"],["It says wrong password","p_w3"]]);
+fx("p_w1","Cannot find Wi-Fi",["Turn Airplane mode off.","Turn Wi-Fi off and on.","Move closer to the router."],"g1");
+fx("p_w2","Connected, nothing loads",["Turn Wi-Fi off and on.","Forget the network, then join again.","Unplug the Wi-Fi box for 30 seconds."],"g1");
+fx("p_w3","Wrong password",["Look on the router sticker for the password.","Type carefully. Capital letters matter, and zero and the letter O look alike.","If someone changed the password, use the new one."],"g1");
+qq("pq_frz","What is frozen?",[["The screen does not respond to touch","p_z1"],["One app is stuck","p_z2"],["It is stuck on a logo","p_z3"]]);
+fx("p_z1","Screen does not respond",["Take off the case and any screen cover.","Clean the screen and your fingers with a dry cloth.","Hold the power button to restart."],"g1");
+fx("p_z2","One app is stuck",["Swipe the app away to close it, then open it again.","Look for an update for the app.","Delete it and install it again. Ask family first."],"g1");
+fx("p_z3","Stuck on a logo",["Plug it in and let it charge for 30 minutes.","Hold the power button for 30 seconds to restart.","Do not keep pressing many buttons."],"help");
+qq("pq_lost","Where do you think it is?",[["Nearby, in the house or car","p_l1"],["Somewhere I went today","p_l2"],["Someone may have taken it","p_l3"]]);
+fx("p_l1","Phone is nearby",["Ask someone to call it. Check cushions, pockets, and bags.","Use Find My (iPhone), Find My Mobile (Samsung), or Find Hub (Android) from another device.","Check the car and the bathroom."],"g1");
+fx("p_l2","Phone is away from home",["Call the last place you were.","Use Find My, Find My Mobile, or Find Hub on a computer to see where it is.","Call your phone company to lock it."],"help");
+fx("p_l3","Phone may be taken",["Use Find My, Find My Mobile, or Find Hub to lock it.","Call your phone company right away.","With family, change your important passwords.","Tell the police if it was stolen."],"help");
+
+/* Printer branches */
+qq("rq_no","What happens when you press Print?",[["Nothing happens on the computer","r_n1"],["The printer makes noise but no paper moves","r_n2"],["It says offline or error","r_n3"],["Lights blink or a code shows","r_n4"]]);
+fx("r_n1","Nothing happens",["Check the printer’s name shows on the Print screen.","Cancel any stuck print jobs.","Restart the computer."],"g1");
+fx("r_n2","Noise, no paper",["Make sure there is paper and it is not stuck.","Open and close the paper tray.","Turn the printer off and unplug it for 30 seconds."],"g1");
+fx("r_n3","Offline or error",["Check the printer’s Wi-Fi light is steady.","Turn off the router, printer, and computer. Turn them back on in that order: router, printer, computer.","Choose the printer again in your computer’s settings."],"g1");
+fx("r_n4","Blinking lights or a code",["Write down the code.","Open the covers and look for stuck paper or tape.","Push the ink cartridges in firmly.","Search the code on the maker’s website."],"help");
+qq("rq_faint","What do the pages look like?",[["Lines or streaks","r_f1"],["Colors are missing or wrong","r_f2"],["Totally blank","r_f3"]]);
+fx("r_f1","Lines or streaks",["Run Clean Printhead from the printer menu.","Print a test page to check.","If copying, wipe the glass with a soft dry cloth."],"g1");
+fx("r_f2","Wrong colors",["Check which color ink is low and replace it.","Run Clean Printhead once.","Use cartridges made for your printer."],"g1");
+fx("r_f3","Blank pages",["Check the cartridges have no tape or plastic strip.","Make sure the ink is not empty.","Print a test page from the printer menu."],"help");
+qq("rq_jam","What is the jam like?",[["Paper keeps jamming","r_j1"],["I cannot reach the paper","r_j2"],["The error stays after the paper is out","r_j3"]]);
+fx("r_j1","Keeps jamming",["Fan the paper stack, then load it flat.","Use fewer sheets. Do not use wrinkled or damp paper.","Slide the paper guides snug against the paper.","Wipe the rollers gently with a slightly damp cloth with the printer off."],"g1");
+fx("r_j2","Cannot reach the paper",["Turn the printer off and unplug it.","Open every door and the back panel.","Use a flashlight and pull the paper gently.","If it will not come out, ask for help."],"help");
+fx("r_j3","Error after paper is out",["Close every door firmly.","Turn the printer off for 1 minute, then on.","Look for tiny torn pieces of paper."],"g1");
+qq("rq_wifi","What is the Wi-Fi problem?",[["The printer shows no Wi-Fi","r_w1"],["It was working, then stopped","r_w2"],["My phone cannot find the printer","r_w3"]]);
+fx("r_w1","Printer has no Wi-Fi",["Restart the printer and the router.","Use the printer’s app to set up Wi-Fi again.","Move the printer closer to the router."],"g1");
+fx("r_w2","Stopped working",["Did the Wi-Fi password change? If yes, set up the printer again.","Restart the router, then the printer.","Give the printer 2 minutes after it starts."],"g1");
+fx("r_w3","Phone cannot find printer",["Your phone must be on the same Wi-Fi as the printer.","Turn Wi-Fi and Bluetooth off and on.","Open the maker’s printing app and add the printer."],"g1");
+
+/* Scam branch: something is asking for my ID (detective questions) */
+T.sc.o.unshift(["🪪 Something is asking for my ID","scq_start"]);
+qq("scq_start","Pause. Do not send anything yet. Who or what is asking for your ID, Social Security number, or personal details?",[["A website or a pop-up","scq_web"],["A phone call","scq_call"],["A text or an email","scq_msg"],["An app","scq_app"],["A person (store, door, office)","scq_person"],["I already gave it away","sc_id_gave"]]);
+fx("sc_id_gave","I already gave my information",["Do not blame yourself. Many smart people get tricked. Act fast.","Call your bank and card companies using the number on the back of your card.","If it was a Social Security number, ask family to help place a free fraud alert with one credit company (Equifax, Experian, or TransUnion). That company tells the others.","Report it at IdentityTheft.gov, the official US government site.","Change the password on any account you shared. Tell your family."]);
+
+/* Website: the detective path */
+qq("scq_web","How did you get to this website?",[["I clicked a link in a text or email","scq_link"],["I typed the address or used my own bookmark","scq_typed"],["I searched and clicked a result","scq_search"],["A pop-up or ad appeared by itself","sc_id_popup"]]);
+fx("sc_id_popup","Stop: a pop-up asking for ID",["Real banks and government offices do not use surprise pop-ups to ask for your ID.","Close the whole browser. Do not type anything.","If it will not close, turn the computer off with the power button.","To check your real account, type the real address yourself."]);
+qq("scq_link","Were you expecting this message? Did you ask for it?",[["No, it came out of nowhere","sc_id_unexp"],["Yes, I asked for it (like a password reset I started)","scq_addr"]]);
+fx("sc_id_unexp","Stop: a message you did not ask for",["A surprise link that asks for your ID is one of the biggest warning signs.","Do not click it again. Do not reply.","To check, open the bank or office website by typing the address yourself, or call the number on your card or bill.","Delete the message and tell a family member."]);
+qq("scq_typed","Did you type the address exactly right, or use a bookmark you saved yourself long ago?",[["Yes, I am sure it is exactly right","scq_why"],["I might have made a typing mistake","sc_id_typo"]]);
+fx("sc_id_typo","Careful: it could be a lookalike",["Scammers buy addresses that are one letter off from real ones, like chasse.com.","Close the page and type nothing.","Find the real address on your bank card, your bill, or a letter, and type it carefully.","Ask family to save it as a bookmark so you do not retype it."]);
+qq("scq_search","In the search results, did the one you clicked say Ad or Sponsored?",[["Yes, it said Ad or Sponsored","sc_id_ad"],["I do not remember","sc_id_ad"],["No, it was a normal result","scq_addr"]]);
+fx("sc_id_ad","Careful: ads can be fake",["Scammers pay for ads that look like real banks and offices.","Close the page without typing anything.","Type the real address yourself, or use the address on your card or bill.","When looking for a bank or government site, skip anything marked Ad or Sponsored."]);
+qq("scq_addr","Look at the web address at the very top of the screen. How does the part before the first slash end?",[["It ends in .gov","scq_gov"],["It ends in .com, .org, or .net","scq_com"],["It ends in something strange (.xyz, .top, .click, .info, .support)","sc_id_oddend"],["I cannot read it, or it is very long","sc_id_cantread"]]);
+qq("scq_gov","Read the words right before .gov. Is it exactly the office you expect (like irs.gov or ssa.gov)?",[["Yes, exactly","scq_why"],["Almost, but a letter is different or there are extra words","sc_id_lookalike"],["I do not know the real address","sc_id_dontknow"]]);
+qq("scq_com","Read the name before .com letter by letter. Is it exactly your bank or company, matching the address on your bank card, bill, or mail?",[["Yes, it matches exactly","scq_why"],["Not exactly: extra words, dashes, numbers, or a different spelling","sc_id_lookalike"],["I am not sure","sc_id_dontknow"]]);
+fx("sc_id_oddend","Stop: a strange ending",["Banks and government offices do not use endings like .xyz, .top, or .click.","Only real government offices can use .gov. Anyone can buy .com, .net, and other endings, so read those carefully.","Close the page and type nothing.","Go to the real site by typing its address from your card or bill."]);
+fx("sc_id_lookalike","Stop: a lookalike address",["Read the address from right to left, up to the first slash. The real owner is the last two words.","Example: in irs.gov.verify-now.com/login, the owner is verify-now.com, not irs.gov.","Dashes, extra words like secure, verify, or help, and swapped letters are warning signs.","The little lock only means the connection is private. It does not mean the site is real.","Close the page and type the real address yourself."]);
+fx("sc_id_dontknow","Not sure of the real address",["If you cannot tell, do not enter anything.","Real banks put their website on your card, your bill, or your mail. Use that.","For the government, type usa.gov yourself. It lists real offices.","Ask a family member to look with you."]);
+fx("sc_id_cantread","Hard to read the address",["A very long or hidden address is a warning sign.","On a phone, tap the address bar to see all of it, or ask family to help read it.","If you still cannot tell, stop and go to the real site by typing it yourself."]);
+qq("scq_why","The address looks right. Now think like a detective: why is it asking for your ID?",[["I started it myself (login, password reset, applying for something)","scq_what"],["It says my account is locked or in trouble and I must act now","sc_id_urgent"],["It says I owe a fine, or I get a refund or prize","sc_id_pay"],["I do not know why it wants it","sc_id_nowhy"]]);
+fx("sc_id_urgent","Stop: pressure and hurry",["Scammers want you scared and rushed. Real offices give you time.","Close the page. Enter nothing.","Call the number printed on your card, your bill, or a letter you already had.","If something is truly wrong, they will tell you there."]);
+fx("sc_id_pay","Stop: fines, refunds, and prizes",["Real government offices send letters in the mail first. They do not ask for ID or payment on a surprise page.","You cannot win a prize you did not enter.","Close the page and enter nothing.","Ask family, and check using the real address you type yourself."]);
+fx("sc_id_nowhy","Stop: no clear reason",["If you cannot say why it needs your ID, do not give it.","Ask yourself: does this match something I started?","Close it and ask a family member to look with you."]);
+qq("scq_what","What exactly does it want?",[["My Social Security number","sc_id_ssn"],["A photo of my driver’s license or passport","sc_id_photo"],["My bank or card numbers","sc_id_bank"],["Just my name and birthday","sc_id_basic"]]);
+fx("sc_id_ssn","Social Security number",["Only enter it if you started the task, the address matches exactly, and the reason makes sense.","Never give it to someone who contacted you first.","Ask a family member to look at the page with you before you type it.","If anything felt off, stop."]);
+fx("sc_id_photo","Photo of your ID",["Some real sites check ID by photo. That is only okay if you started it, you reached the site yourself, and the address matches exactly.","Never send a photo of your ID by text, email, or chat.","Ask a family member to check with you first.","When unsure, call the number on your card or bill and ask."]);
+fx("sc_id_bank","Bank or card numbers",["Only type them on a site you reached yourself, with an address that matches exactly.","Never give them to someone who contacted you.","Real banks do not ask for your full card number and PIN together by message.","If unsure, call the number on the back of your card."]);
+fx("sc_id_basic","Name and birthday",["These carry less risk, but scammers use them too.","Check that the address matches exactly and that you started it.","If it asks for more later, go back and ask why again.","Ask family if you are unsure."]);
+
+/* Phone calls */
+qq("scq_call","What did the caller say?",[["They are from the government (IRS, Social Security, Medicare, police)","sc_id_callgov"],["They are from my bank or credit card","sc_id_callbank"],["They are from Microsoft, Apple, Amazon, or tech support","sc_id_calltech"],["I called them myself, using a number I trust","sc_id_calledme"]]);
+fx("sc_id_callgov","Stop: a government caller",["Government offices do not call to ask for your Social Security number or to threaten arrest.","Hang up. You are allowed to.","If you worry, look up the office on its real website and call the number there.","Tell a family member."]);
+fx("sc_id_callbank","Stop: caller says they are your bank",["Do not give any numbers. Hang up.","Call the number on the back of your card.","Caller ID can be faked, so a real-looking name proves nothing.","Tell your family."]);
+fx("sc_id_calltech","Stop: a tech support caller",["Real tech companies do not cold call you about problems.","Never let them take control of your computer.","Hang up and tell family. If you already let them in, turn off the computer and call your bank."]);
+fx("sc_id_calledme","You started the call",["If you called a number from your card, bill, or official website, it is normally fine to confirm who you are.","Giving the last 4 digits or your birthday is normal. Never give a full card PIN.","If anything seems off, hang up and call back."]);
+
+/* Texts and emails */
+qq("scq_msg","What does the message want you to do?",[["Click a link","scq_link"],["Call a number","sc_id_callnum"],["Reply with my ID or numbers","sc_id_reply"]]);
+fx("sc_id_callnum","Stop: a number in a message",["Do not call it. Scammers put their own number in messages.","Use the number on your card, your bill, or the official website.","Delete the message."]);
+fx("sc_id_reply","Stop: replying with ID",["Never reply to a message with your ID, Social Security number, or card number.","Real offices do not ask that way.","Delete the message and tell a family member."]);
+
+/* Apps */
+qq("scq_app","Where did the app come from?",[["I picked it from the official app store myself","scq_why"],["It is a bank or government app I already use","scq_why"],["A link or a person told me to install it","sc_id_badapp"]]);
+fx("sc_id_badapp","Stop: an app you were told to install",["Do not open it or type anything.","Delete it: press and hold the app, then choose Remove or Uninstall.","Tell a family member. If you typed anything, call your bank."]);
+
+/* People */
+qq("scq_person","Where are you?",[["At a store or bank counter","sc_id_store"],["Someone at my door","sc_id_door"],["A new doctor, school, or job","sc_id_form"]]);
+fx("sc_id_store","At a store or counter",["It is normal to show ID for age checks, banking, or some purchases.","Let them look at it. Do not let them photograph or copy it unless you are told why.","Never say your Social Security number out loud where others can hear.","You can always ask: Why do you need this?"]);
+fx("sc_id_door","Someone at your door",["Do not let them in.","Ask for a badge and the company name. Then call the company yourself, using a number you find on your own.","Real offices mail a letter first.","If you feel in danger, call 911."]);
+fx("sc_id_form","New doctor, school, or job",["It is normal to share ID with a new doctor, school, or employer you chose.","Make sure you were the one who started the contact.","Ask how they keep your information safe.","Ask family if you are unsure."]);
+
+/* Website says "you can't do this" */
+T.home.o.splice(T.home.o.findIndex(o=>o[0].includes("Wi-Fi"))+1,0,["🌐 A website says I can’t do something","web"]);
+qq("web","What is the website doing or saying?",[["It says I do not have access, or I am blocked","wq_denied"],["It says page not found or cannot be reached","wq_nf"],["A warning page says the site is not safe or not private","wq_warn"],["It says my browser is old or not supported","wq_browser"],["It will not let me sign in","wq_login"],["A form will not let me continue","wq_form"],["The page is blank, stuck, or looks broken","wq_broken"],["It says it is not available where I live","w_region"]]);
+
+/* shared website checks */
+qq("wq_gen","Does the same problem happen on other websites too?",[["Yes, every website","w_allsites"],["No, only this website","wq_one"]]);
+fx("w_allsites","Every website has trouble",["The problem is probably your internet, not the website.","Open a different site, like a news site, to check.","Close the browser. Unplug the Wi-Fi box for 30 seconds, then plug it in."],"wf1");
+qq("wq_one","Try the same website on another device, or in another browser like Chrome, Safari, or Edge. What happens?",[["It works there","w_clear"],["It fails there too","w_down"],["I cannot try another","w_clear"]]);
+fx("w_clear","Clear the browser’s saved data",["Open the browser menu (three dots or three lines). Look for Settings, then Privacy, then Clear browsing data.","Choose Cookies and cached files. Do not clear saved passwords unless you know them.","Close the browser and open it again.","Try the website again."],"w_ext");
+fx("w_ext","Turn off extras that block sites",["Ad blockers and VPNs can stop a website from working. Turn them off for this site.","Try a private or incognito window.","Update the browser."],"w_down");
+fx("w_down","The website may be down",["Search for the website name and the word outage.","Wait 30 minutes and try again. Sites go down for repairs.","Look for the site’s help page, or the phone number on your bill or card.","Never use a phone number from a pop-up."],"help");
+
+/* Access denied */
+qq("wq_denied","What exactly does it say?",[["Access denied or 403","w_403"],["You have been blocked","w_blocked"],["Members only, or it needs payment","w_paywall"],["Not allowed for my age","w_age"]]);
+fx("w_403","Access denied",["This usually means the page needs a login, or you clicked an old link.","Go to the website’s main page and use its menu to find what you want.","Sign in if you have an account.","Close the browser and open it again. Turn off a VPN if you use one."],"wq_gen");
+fx("w_blocked","You have been blocked",["Some sites block a VPN or an old browser.","Turn off any VPN.","Wait an hour. Too many tries can cause a short block.","Try again from home Wi-Fi, not public Wi-Fi."],"wq_gen");
+fx("w_paywall","Members only or payment",["Some pages are only for paying members.","Look for a Sign in link at the top if you already have an account.","Do not enter card details on a page that came from an ad. Go to the site’s main page yourself.","Many news sites give a few free articles each month. Try another day."],"wq_gen");
+fx("w_age","Age or place limit",["Some pages limit what you can see.","Sign in to your account if you have one.","Check the date of birth on your account is right.","If it still says no, use the site’s help page."],"wq_gen");
+
+/* Not found / cannot be reached */
+qq("wq_nf","Which words do you see?",[["Page not found, or 404","w_404"],["This site cannot be reached","w_unreach"]]);
+fx("w_404","Page not found (404)",["404 means the page moved or the address has a typing mistake.","Check the web address for a mistake.","Go to the site’s main page and use its search box.","Search for the page title in a search engine."],"wq_gen");
+fx("w_unreach","This site cannot be reached",["Check the address spelling.","Open another website to see if your internet works.","The site may be down. Try again in 30 minutes.","If everything fails, unplug the Wi-Fi box for 30 seconds."],"wq_gen");
+
+/* Warning pages */
+qq("wq_warn","What does the warning say?",[["Your connection is not private","wq_private"],["Deceptive or dangerous site ahead","w_danger"],["This site cannot be reached","w_unreach"]]);
+fx("w_danger","Stop: dangerous site",["Do not continue. Tap Back to safety.","Close the page.","If you came from a link in a message, delete the message.","If you typed a password there, change it with a family member."],"help");
+qq("wq_private","What kind of site is it?",[["My bank, a store, or anywhere I type personal details","w_nogo"],["A site where I only read","w_readonly"],["I am on public Wi-Fi (café, hotel, store)","w_public"]]);
+fx("w_nogo","Do not continue on this site",["First check your device’s date and time. A wrong clock can cause this warning.","If the date is right, do not choose Advanced or Proceed.","Never type a password or card number on a page with this warning.","Go to the real site by typing the address from your card or bill, or call them."],"help");
+fx("w_readonly","A read-only site",["The safest choice is Back to safety.","If you do read it, do not type anything or sign in.","Do not download anything from it.","Check your device’s date and time first."],"help");
+fx("w_public","On public Wi-Fi",["Hotels and cafés often need you to accept terms first. Open a new tab and go to any normal website. The sign-in page should appear.","Do not log into banks or shops on public Wi-Fi.","Use your phone’s own data for private things.","Ask the staff for the right network name."],"help");
+
+/* Old browser */
+qq("wq_browser","What does it say?",[["The browser is old or not supported","w_oldbr"],["Turn on cookies or JavaScript","w_cookies"],["Turn off my ad blocker","w_adblock"]]);
+fx("w_oldbr","Old or unsupported browser",["Open the browser menu, then Help or About, and check for updates.","Update the computer or phone too.","Try another browser, like Chrome, Edge, or Safari.","Close the browser and open it again."],"wq_gen");
+fx("w_cookies","Cookies or JavaScript",["Open the browser Settings, then Privacy or Site settings.","Make sure Cookies are allowed for this site.","JavaScript should be turned on in Site settings.","Close and reopen the browser. Ask family to help with settings."],"wq_gen");
+fx("w_adblock","Ad blocker message",["Click the ad blocker icon at the top of the browser.","Choose Pause or Turn off on this site.","Reload the page.","Only do this on sites you trust."],"wq_gen");
+
+/* Sign in */
+qq("wq_login","What goes wrong when you sign in?",[["It says wrong password","w_wrongpw"],["Too many tries, or the account is locked","w_locked"],["It sends a code but I do not get it","w_code"],["It says no account found","w_noacct"],["It keeps signing me out","w_signout"]]);
+fx("w_wrongpw","Wrong password",["Check Caps Lock and the number keys.","Type it in the search bar first so you can see it clearly. Then copy it.","Check you are using the right email. Some people have two.","Use Forgot password, and look in Spam or Junk for the email."],"w_noemail");
+fx("w_noemail","No reset email",["Look in Spam, Junk, and Promotions folders.","Check you used the right email address.","Wait 10 minutes and try once more. Do not press the button again and again.","Some sites can send a reset by text message instead."],"help");
+fx("w_locked","Account locked",["Too many wrong tries lock an account for a while.","Wait 30 minutes to an hour, then try once, carefully.","Or use Forgot password to unlock it.","Do not keep trying. It can make the lock longer. If it stays locked, use the site’s help page."],"help");
+fx("w_code","Code does not arrive",["It can take a few minutes. Wait 3 minutes.","Check Spam or Junk, and your phone for texts.","Check the phone number or email on your account is current.","Ask for a new code once and use only the newest one."],"help");
+fx("w_noacct","No account found",["Check the spelling of your email.","Try any other emails you use.","You may never have signed up. Ask family to help.","Do not give personal details to fix it unless you are sure the site is real."],"help");
+fx("w_signout","Keeps signing you out",["Allow cookies for the site in your browser settings.","Do not use private or incognito mode if you want it to remember you.","Tick the box that says Keep me signed in.","Clear this site’s data, then sign in again."],"wq_gen");
+
+/* Forms */
+qq("wq_form","What happens with the form?",[["A red error says something is wrong, but I cannot tell what","w_form_red"],["The Submit or Next button does nothing","w_form_btn"],["It asks me to prove I am human","w_captcha"],["It says my information does not match","w_mismatch"]]);
+fx("w_form_red","A red error on the form",["Scroll up and down. The error is often at the top or next to a box.","Look for boxes with a red outline or a star (*). Those must be filled in.","Check the format: phone numbers with no dashes, dates like 01/02/1950, and no extra spaces at the end.","Try typing it again."],"wq_gen");
+fx("w_form_btn","Button does nothing",["Make sure every needed box is filled in.","Wait a few seconds. Buttons can be slow.","Scroll to the bottom. There may be a box to tick.","Try another browser, or turn off the ad blocker."],"wq_gen");
+fx("w_captcha","Prove you are human",["Click the box that says I am not a robot.","If it shows pictures, tap every square with the thing it asks for, then tap Verify.","If it keeps failing, wait a minute and try again. Turn off a VPN.","This is a normal safety check."],"wq_gen");
+fx("w_mismatch","Information does not match",["Check your name and birthday match your official ID exactly.","Check spelling, middle names, and your address.","Try the address style you used before (Street or St).","If it still fails, call the number on the official site."],"help");
+
+/* Broken pages */
+qq("wq_broken","What does the page do?",[["A blank white page","w_blank"],["It spins forever","w_spin"],["Pictures or buttons are missing","w_missing"],["It looks stretched or tiny","w_layout"]]);
+fx("w_blank","Blank page",["Press the circle arrow (Reload) at the top.","Reload fully: Ctrl and F5 on Windows, or Command, Shift, and R on a Mac.","Close extra tabs and try again.","Update the browser."],"wq_gen");
+fx("w_spin","Spins forever",["Wait one full minute.","Reload the page.","Open another site to check your internet.","Try later. Sites get busy."],"wq_gen");
+fx("w_missing","Missing pictures or buttons",["Reload the page fully.","Turn off ad blockers for this site.","Update the browser.","Try another browser."],"wq_gen");
+fx("w_layout","Stretched or tiny",["Hold Ctrl (Command on a Mac) and press 0 to reset the zoom.","On a phone, tap the browser menu and try Request desktop site or turn it off.","Turn the phone sideways."],"wq_gen");
+fx("w_region","Not available where you live",["Some shows and websites only work in certain countries.","Check you are not using a VPN or a hotel network.","This is the website’s choice, so there is nothing to fix.","Look for a similar free website. Ask family to help."],"help");
+
+/* Streaming apps */
+const ST=[["nf","Netflix",{site:"netflix.com",cc:"While a show plays, tap the screen (or move the mouse) and choose the speech bubble icon called Audio & Subtitles."}],
+["yt","YouTube",{site:"youtube.com",cc:"While a video plays, tap the CC button at the bottom of the video."}],
+["hu","Hulu",{site:"hulu.com",cc:"While a show plays, tap the screen and choose the speech bubble or the gear, then Subtitles."}],
+["dp","Disney+",{site:"disneyplus.com",cc:"While a show plays, tap the screen and choose the Audio and Subtitles speech bubble icon."}],
+["pv","Prime Video",{site:"primevideo.com",cc:"While a show plays, tap the screen and choose the speech bubble (Subtitles)."}],
+["ot","Another streaming app",{site:"the app’s official website",cc:"While a show plays, tap the screen and look for a speech bubble or CC button."}]];
+mk("st","Which streaming app do you use?",ST,[["login","I cannot sign in"],["buf","It keeps buffering or freezing"],["cc","Captions or subtitles"],["pay","Billing or cancelling"]],
+(p,f)=>({
+ login:["Check Caps Lock and the email you used to sign up.","Use Forgot password on the sign-in page.","Use this app’s own account, not your TV or cable password.","Try signing in at "+f.site+" on a computer. If it works there, restart the TV app.","Only sign in at the real address or inside the real app."],
+ buf:["Pause for one minute and let it load.","Close the app and open it again.","Unplug the Wi-Fi box for 30 seconds, then plug it in.","Look in the app Settings for Playback or Quality and choose a lower one.","Turn off other devices that use the internet."],
+ cc:[f.cc,"If the words are too small, look in the app Settings for Subtitle appearance.","You can also turn captions on in your TV’s Settings, under Accessibility."],
+ pay:["Go to "+f.site+" on a computer and sign in.","Look for Account or Settings, then Membership or Billing.","Change or cancel your plan there.","Never call a phone number from a pop-up or email."]
+})[p]);
+qq("sq_pay","What is the money problem?",[["I was charged and do not know why","s_unk"],["I cannot cancel","s_nocancel"],["It says my payment failed","s_failed"]]);
+fx("s_unk","A charge you do not know",["Look at your bank or card statement for the exact name of the charge.","Check each streaming account for a membership under your email.","Ask family. Someone may have signed up for you.","If you still do not know, call the number on the back of your card."],"help");
+fx("s_nocancel","Cannot cancel",["Cancel on the real website, not through a number in an email.","Some apps charge through Apple, Google, or Amazon. Check Subscriptions in those accounts.","Take a screenshot when you cancel."],"help");
+fx("s_failed","Payment failed",["Check the card has not expired.","Update the payment in Account settings on the real website.","Never type card numbers into a link from a message."],"help");
+
+/* Photos and texts */
+const PS=[["ip","iPhone",{m:"Messages",p:"Photos"}],["sg","Samsung Galaxy",{m:"Messages",p:"Gallery"}],["px","Google Pixel",{m:"Messages",p:"Photos"}]];
+mk("ps","What phone do you use?",PS,[["send","Send a photo in a text"],["find","Find an old photo"],["nosend","A photo or text will not send"],["group","Start a group text"],["notcome","Texts are not coming through"]],
+(p,f)=>({
+ send:["Open the "+f.m+" app and open the chat with the person.","Tap the camera, picture, or + button next to the message box.","Pick the photo.","Tap the send arrow."],
+ find:["Open the "+f.p+" app.","Photos are in date order. Scroll up for older ones.","Tap the magnifying glass and type a word like beach, or a person’s name.","Look in Albums for Favorites and Screenshots."],
+ nosend:["Check you have Wi-Fi or phone signal.","Turn Airplane mode off.","Try sending fewer photos at once.","Restart the phone."],
+ group:["Open "+f.m+" and tap the new message button.","Type the first name, then the next name, in the To box.","Type your message and send it. Everyone gets it.","To quiet a group, open it, tap the group name at the top, and choose Mute."],
+ notcome:["Check your signal and Wi-Fi.","Make sure Do Not Disturb is off.","In Settings, open Notifications and make sure "+f.m+" is on.","Restart the phone."]
+})[p]);
+T.home.o.splice(T.home.o.length-1,0,["🎬 Netflix, YouTube, and streaming apps","st"],["📸 Photos and text messages","ps"]);
+
+/* More scam types */
+A.sc_med={t:"Medicare or insurance card call",s:["Medicare does not call to sell you a card or ask for your number.","Hang up. Do not press any buttons.","To check, use the number on your real card, or type the official Medicare website yourself.","Tell a family member."]};
+A.sc_rom={t:"An online friend asks for money",s:["If someone you only know online asks for money, gift cards, or crypto, that is a warning sign, even if they seem kind.","A real friend does not need money before you have met.","Do not send anything. Ask a family member to read the messages with you.","It is okay to stop talking to them."]};
+A.sc_tech={t:"Fake tech support",s:["Real tech companies do not call you out of the blue.","Never let anyone take control of your computer.","Hang up, or close the page. Turn the computer off if you need to.","If you already let someone in, call your bank and tell family."]};
+A.sc_char={t:"A charity asks for money right now",s:["Be careful with pushy calls, texts, or links asking for donations, especially after big news.","Never pay by gift card, wire, or crypto.","Look up the charity yourself and give on its real website.","Ask family if you are unsure."]};
+T.sc.o.push(["Medicare or insurance card call","sc_med"],["An online friend asks for money","sc_rom"],["Fake tech support","sc_tech"],["A charity asks for a donation","sc_char"]);
+
+/* Is this a scam? checker */
+const CHK=["Did it come out of nowhere? You did not ask for it.","Does it say you must act right now, or something bad will happen?","Does it ask for money, gift cards, or a payment you did not expect?","Does it ask for a password, a code, your ID, or card numbers?","Is the sender, web address, or phone number strange, or not one you know?","Does it ask you to keep it a secret or not tell your family?","Does it promise a prize, a refund, or a lot of money?"];
+let chk={i:0,n:0};
+T.sc.o.unshift(["🛡️ Is this a scam? Let me check","chk"]);
+
+function firstQ(k){let m=k.match(/^tv_.+_(pic|snd|rem|net|pow)$/);if(m)return "tv"+m[1];
+  m=k.match(/^pc_.+_(slow|frz|snd|wifi|blk|mouse)$/);if(m)return "cq_"+m[1];
+  m=k.match(/^ph_.+_(vol|stor|batt|wifi|frz|lost)$/);if(m)return "pq_"+m[1];
+  m=k.match(/^pr_.+_(no|faint|jam|wifi)$/);if(m)return "rq_"+m[1];
+  m=k.match(/^st_.+_(login|buf|pay)$/);if(m)return {login:"wq_login",buf:"tvnet",pay:"sq_pay"}[m[1]];
+  if(k==="wifi_all"||k==="wifi_slow")return "wf1";return "g1";}
+function nextOf(k){const n=A[k].n;if(n==="help")return "more";return n||firstQ(k);}
+
+const app=document.getElementById("app");
+let hist=["home"];
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x)e.textContent=x;return e;};
+function opt(label,cls,fn){const b=el("button","opt "+(cls||""),label);b.onclick=fn;return b;}
+const store={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+function devs(){try{return JSON.parse(store.get("qt_dev")||"[]");}catch(e){return [];}}
+function saveDev(k){const m=k.match(/^(tv|pc|ph|pr|sp|vc|st|ps)_[a-z]+$/);if(!m||!T[k])return;const par=T[m[1]];const o=par&&par.o.find(x=>x[1]===k);if(!o)return;const d=devs().filter(x=>x.k!==k);d.unshift({k:k,l:o[0]});store.set("qt_dev",JSON.stringify(d.slice(0,4)));}
+function go(k){saveDev(k);if(k==="chk")chk={i:0,n:0};hist.push(k);render();window.scrollTo(0,0);}
+
+const srch=document.getElementById("srch"),qi=document.getElementById("q"),res=document.getElementById("res");
+let IDX=null;
+function idx(){if(IDX)return IDX;IDX=[];
+  for(const k in A){const a=A[k];IDX.push({k:k,l:a.t,x:(a.t+" "+a.s.join(" ")).toLowerCase()});}
+  for(const k in T){if(k==="home"||T[k].q==="What is wrong?")continue;IDX.push({k:k,l:T[k].q,x:(T[k].q+" "+T[k].o.map(o=>o[0]).join(" ")).toLowerCase()});}
+  return IDX;}
+const STOP=new Set(["my","the","is","a","an","to","of","and","it","i","me","do","how","not","does","what","on","in","for","with","no","wont","can","cant"]);
+qi.oninput=function(){
+  res.innerHTML="";
+  const w=qi.value.toLowerCase().split(/[^a-z0-9]+/).filter(x=>x.length>1&&!STOP.has(x));
+  if(!w.length)return;
+  const sc=idx().map(e=>{let n=0;w.forEach(t=>{if(e.l.toLowerCase().includes(t))n+=3;else if(e.x.includes(t))n+=1;});return [n,e];}).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]).slice(0,8);
+  if(!sc.length){res.appendChild(el("div","note","I did not find that. Try a different word, or tap a topic below."));return;}
+  sc.forEach(x=>res.appendChild(opt(x[1].l,"",()=>{qi.value="";res.innerHTML="";go(x[1].k);})));
+};
+
+function speakBtn(text){
+  const b=el("button","tool","🔊 Read it to me");
+  b.onclick=()=>{try{const sp=window.speechSynthesis;if(!sp){b.textContent="Reading out loud is not available here";return;}if(sp.speaking){sp.cancel();return;}const u=new SpeechSynthesisUtterance(text);u.rate=0.9;sp.speak(u);}catch(e){}};
+  return b;}
+
+function chkView(){
+  if(chk.i<CHK.length){
+    app.appendChild(el("p","mine","Question "+(chk.i+1)+" of "+CHK.length));
+    app.appendChild(el("h2","",CHK[chk.i]));
+    const r=el("div","row");
+    r.appendChild(opt("Yes","",()=>{chk.n++;chk.i++;render();}));
+    r.appendChild(opt("No","",()=>{chk.i++;render();}));
+    app.appendChild(r);
+  } else {
+    const n=chk.n;
+    const t=n>=4?"Stop: this is almost certainly a scam":n>=2?"Warning: this looks like a scam":"Few warning signs, but stay careful";
+    const x=n>=4?"Do not click, call, reply, or pay. Delete it and tell a family member. If you already shared money or a password, call your bank right away.":n>=2?"Do not use any link or phone number in it. Look up the real company yourself, or call the number on your card or bill. Ask a family member to look with you.":"Having few red flags does not prove it is safe. Do not use links or numbers inside the message. When in doubt, ask a family member.";
+    app.appendChild(el("h2","",t));
+    app.appendChild(el("p","mine","Warning signs found: "+n+" of "+CHK.length));
+    app.appendChild(el("div","note",x));
+    const b=el("button","tool","Check something else");b.style.marginTop="16px";b.onclick=()=>{chk={i:0,n:0};render();};app.appendChild(b);
+  }
+}
+
+function render(){
+  const k=hist[hist.length-1];
+  try{window.speechSynthesis&&speechSynthesis.cancel();}catch(e){}
+  app.innerHTML="";
+  srch.style.display=k==="home"?"block":"none";
+  if(k==="chk"){
+    chkView();
+  } else if(T[k]){
+    app.appendChild(el("h2","",T[k].q));
+    if(k==="home"){
+      const d=devs();
+      if(d.length){
+        const sec=el("div","sec");sec.appendChild(el("p","mine","⭐ My devices"));
+        const bx=el("div","opts");d.forEach(x=>bx.appendChild(opt("⭐ "+x.l,"",()=>go(x.k))));sec.appendChild(bx);
+        const f=el("button","tool","Forget my devices");f.style.marginTop="10px";f.onclick=()=>{store.set("qt_dev","[]");render();};sec.appendChild(f);
+        app.appendChild(sec);
+      }
+    } else app.appendChild(speakBtn(T[k].q+". "+T[k].o.map(o=>o[0]).join(". ")));
+    const box=el("div","opts");
+    T[k].o.forEach(o=>box.appendChild(opt(o[0],"",()=>go(o[1]))));
+    app.appendChild(box);
+  } else if(A[k]){
+    const a=A[k],learn=k.startsWith("l_"),scam=k.startsWith("sc_");
+    app.appendChild(el("h2","",a.t));
+    app.appendChild(speakBtn(a.t+". "+a.s.map((s,i)=>"Step "+(i+1)+". "+s).join(" ")));
+    const d=el("div","answer"),ol=el("ol");
+    a.s.forEach(s=>ol.appendChild(el("li","",s)));
+    d.appendChild(ol);app.appendChild(d);
+    if(scam){
+      app.appendChild(el("div","note","If you lost money or shared a password, call your bank right away and tell your family."));
+    } else {
+      app.appendChild(el("p","ask",learn?"Was that clear?":"Did that help?"));
+      const r=el("div","row");
+      r.appendChild(opt(learn?"Yes, got it!":"Yes, it worked!","yes",()=>{if(learn){hist.pop();render();}else go("done");}));
+      r.appendChild(opt(learn?"Still confused":"Not yet","",()=>go(learn?"lc":nextOf(k))));
+      app.appendChild(r);
+    }
+  } else if(k==="done"){
+    app.appendChild(el("h2","","Wonderful! You fixed it."));
+    app.appendChild(el("div","note","Nice work. Come back any time you have a new problem."));
+  } else if(k==="lc"){
+    app.appendChild(el("h2","","That is okay"));
+    app.appendChild(el("div","note","Learning takes practice. Ask a family member to sit with you and try each step slowly together. You can come back and read it again any time."));
+  } else if(k==="more"){
+    app.appendChild(el("h2","","I have run out of ideas. Let’s get a person to help."));
+    const tried=[...new Set(hist.filter(x=>A[x]&&!x.startsWith("l_")&&!x.startsWith("sc_")).map(x=>A[x].t))];
+    if(tried.length){
+      app.appendChild(el("p","ask","Here is what you already tried:"));
+      const d=el("div","answer"),ul=el("ul");
+      tried.forEach(t=>ul.appendChild(el("li","",t)));
+      d.appendChild(ul);app.appendChild(d);
+    }
+    const msg="I need help with my tech."+(tried.length?" I already tried: "+tried.join("; ")+".":"")+" Can you help me?";
+    const sb=el("button","tool","📤 Share what I tried");sb.style.marginTop="16px";
+    sb.onclick=async()=>{try{if(navigator.share){await navigator.share({text:msg});}else if(navigator.clipboard){await navigator.clipboard.writeText(msg);sb.textContent="Copied! Paste it in a message.";}else{sb.textContent=msg;}}catch(e){sb.textContent="Copy this: "+msg;}};
+    app.appendChild(sb);
+    app.appendChild(el("div","note","Show this list to your helper so they do not repeat it. For a TV or device, call the maker’s support number (on the box or website). For internet or cable, call the number on your bill. Or ask a family member to come look."));
+  }
+  const nav=el("div","nav");
+  if(hist.length>1){
+    const b=el("button","","← Back");b.onclick=()=>{hist.pop();render();};nav.appendChild(b);
+    const st=el("button","","Start over");st.onclick=()=>{hist=["home"];render();};nav.appendChild(st);
+  }
+  app.appendChild(nav);
+}
+let big=0;
+document.getElementById("size").onclick=function(){
+  big=(big+1)%3;
+  document.documentElement.style.setProperty("--fs",[20,24,28][big]+"px");
+  this.textContent=big===2?"A−":"A+";
+};
+render();
+</script>
+</body>
+</html>
